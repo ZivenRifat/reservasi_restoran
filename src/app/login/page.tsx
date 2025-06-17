@@ -1,54 +1,47 @@
-"use client"; // Harus di paling atas
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // ✅ Ganti ke navigation
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [kata_sandi, setKataSandi] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(""); // Reset error
-
-    // Logging data email dan password untuk memastikan koneksi data
-    console.log("Logging in with:", { email, password });
+    setError("");
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, kata_sandi }),
       });
 
-      // Periksa status respons terlebih dahulu
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(errorMessage || "Login failed, please try again.");
-      }
-
-      // Dapatkan data JSON dari respons
       const data = await response.json();
 
-      // Log data yang diterima dari server
-      console.log("Received data from API:", data);
-
-      if (data.token) {
-        localStorage.setItem("auth_token", data.token);
-        router.push("/profile");
+      if (!response.ok) {
+        // jika error dari backend, tampilkan pesan error
+        setError(data.message || "Login gagal, silakan coba lagi.");
+      } else if (data.status === "success" && data.data?.token) {
+        // jika berhasil, simpan token di context dan redirect ke home
+        login(data.data.token);
+        // redirect dengan cara yang aman supaya tidak hydration mismatch
+        window.location.href = "/";
       } else {
-        setError(data.message || "Login failed");
+        setError(data.message || "Login gagal, silakan coba lagi.");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      setError("Something went wrong, please try again.");
+      setError("Terjadi kesalahan, silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +49,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Kiri: Form Login */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12 bg-white">
         <h1 className="text-4xl font-bold mb-6">LOGO</h1>
         <h2 className="text-xl font-bold mb-2">Selamat Datang!</h2>
@@ -74,18 +66,33 @@ export default function LoginPage() {
               required
             />
           </div>
-          <div>
-            <label className="block mb-1 font-medium">Password</label>
+
+          <div className="relative">
+            <label className="block mb-1 font-medium">Kata Sandi</label>
             <input
-              type="password"
-              placeholder="Password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Kata Sandi"
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={kata_sandi}
+              onChange={(e) => setKataSandi(e.target.value)}
               required
             />
+
+            {/* Tombol ikon show/hide */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-[42px] right-3 text-gray-600 hover:text-gray-800 focus:outline-none"
+            >
+              {showPassword ? (
+                <AiOutlineEye size={22} />
+              ) : (
+                <AiOutlineEyeInvisible size={22} />
+              )}
+            </button>
+
             <p className="text-right text-sm text-blue-500 mt-1 cursor-pointer">
-              Lupa password
+              Lupa kata sandi
             </p>
           </div>
 
@@ -111,7 +118,6 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Kanan: Gambar */}
       <div className="hidden md:block w-1/2">
         <img
           src="/images/LoginPage.jpg"

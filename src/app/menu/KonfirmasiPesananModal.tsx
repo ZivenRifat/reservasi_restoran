@@ -2,6 +2,12 @@
 
 import { X } from "lucide-react";
 
+interface MenuItem {
+  nama: string;
+  jumlah: number;
+  subtotal: number;
+}
+
 interface KonfirmasiPesananModalProps {
   onClose: () => void;
   onConfirm: () => void;
@@ -9,11 +15,14 @@ interface KonfirmasiPesananModalProps {
     namaPemesan: string;
     phoneNumber: string;
     email: string;
-    namaRestoran: string;
+    nama: string;
     tanggal: string;
     waktu: string;
-    jumlahOrang: number;
+    jumlah_orang: number;
     totalHarga: number;
+    catatan?: string;
+    nomor_kursi?: number;
+    menu: MenuItem[];
   };
 }
 
@@ -25,7 +34,7 @@ export default function KonfirmasiPesananModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md relative">
-        {/* Close button */}
+        {/* Tombol Close */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#481111]"
@@ -35,14 +44,14 @@ export default function KonfirmasiPesananModal({
 
         <h2 className="text-xl font-bold text-center mb-6">Data Pesanan Anda</h2>
 
-        {/* Data Pesanan */}
+        {/* Informasi Umum */}
         <div className="space-y-4 text-sm">
           <div className="flex justify-between">
             <span className="font-semibold">Nama Pemesan</span>
             <span>{data.namaPemesan}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-semibold">Phone number</span>
+            <span className="font-semibold">Phone Number</span>
             <span>{data.phoneNumber}</span>
           </div>
           <div className="flex justify-between">
@@ -51,7 +60,7 @@ export default function KonfirmasiPesananModal({
           </div>
           <div className="flex justify-between">
             <span className="font-semibold">Nama Restoran</span>
-            <span>{data.namaRestoran}</span>
+            <span>{data.nama}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-semibold">Tanggal</span>
@@ -63,22 +72,43 @@ export default function KonfirmasiPesananModal({
           </div>
           <div className="flex justify-between">
             <span className="font-semibold">Jumlah Orang</span>
-            <span>{data.jumlahOrang}</span>
+            <span>{data.jumlah_orang}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="font-semibold">Total Harga Pesanan</span>
+
+          {/* Meja */}
+          {data.nomor_kursi !== undefined && (
+            <div className="flex justify-between">
+              <span className="font-semibold">Nomor Meja</span>
+              <span>{data.nomor_kursi}</span>
+            </div>
+          )}
+
+          {/* Daftar Menu */}
+          <div className="mt-4">
+            <span className="font-semibold">Menu Dipesan</span>
+            <ul className="mt-1 text-sm text-gray-700 space-y-1">
+              {data.menu.map((item, idx) => (
+                <li key={idx} className="flex justify-between">
+                  <span>{item.nama} x{item.jumlah}</span>
+                  <span>Rp {item.subtotal.toLocaleString('id-ID')}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Total */}
+          <div className="flex justify-between font-semibold mt-4">
+            <span>Total Harga Pesanan</span>
             <span>Rp {data.totalHarga.toLocaleString('id-ID')}</span>
           </div>
 
           {/* Catatan */}
-          <div>
-            <span className="font-semibold">Note</span>
-            <input
-              type="text"
-              placeholder="Tuliskan pesan untuk restoran..."
-              className="mt-1 w-full p-2 border rounded-md text-sm placeholder-gray-400"
-            />
-          </div>
+          {data.catatan && (
+            <div>
+              <span className="font-semibold">Catatan</span>
+              <p className="mt-1 text-sm text-gray-700">{data.catatan}</p>
+            </div>
+          )}
         </div>
 
         {/* Tombol Konfirmasi */}

@@ -1,14 +1,10 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: '/api/:path*', // Semua permintaan API akan diarahkan ke backend Laravel
-  //       destination: 'http://127.0.0.1:8000/api/:path*',
-  //     },
-  //   ];
-  // },
+  /* config options here */ 
+  // output: 'standalone',
+  crossOrigin: 'anonymous',
+  
 };
 
-export default nextConfig;
+export default nextConfig;

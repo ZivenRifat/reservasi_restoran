@@ -1,40 +1,61 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
 import RestaurantCard from "@/Components/RestaurantCard";
 
+type Restaurant = {
+  id: string;
+  nama: string;
+  deskripsi: string;
+  foto_utama?: {
+    url: string;
+  };
+};
+
 const RekomendasiPage = () => {
+  const [restoran, setRestoran] = useState<Restaurant[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/rekomendasi');
+        const json = await res.json();
+        setRestoran(json.data || []);
+      } catch (error) {
+        console.error("Gagal fetch restoran rekomendasi", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <>
       <Navbar />
-
       <main className="px-6 md:px-16 py-10 bg-gray-100 min-h-screen">
         <h1 className="text-3xl font-bold mb-2">Rekomendasi Restoran</h1>
         <p className="text-gray-600 mb-6">Pilihan restoran untuk dicoba!</p>
 
         <div className="space-y-6">
-          <RestaurantCard
-            title="Warung Sambal Bakar Semarang"
-            description="Semarang Timur, Kota Semarang"
-            imageUrl="/images/SearchPagePic.jpg"
-            variant="recommendation"
-          />
-
-          <RestaurantCard
-            title="Warung Sambal Bakar Semarang"
-            description="Semarang Timur, Kota Semarang"
-            imageUrl="/images/SearchPagePic.jpg"
-            variant="recommendation"
-          />
-
-          <RestaurantCard
-            title="Warung Sambal Bakar Semarang"
-            description="Semarang Timur, Kota Semarang"
-            imageUrl="/images/SearchPagePic.jpg"
-            variant="recommendation"
-          />
+          {restoran.map((item) => (
+            <Link
+              key={item.id}
+              href={`/restoran/${item.id}`}
+              className="block"
+            >
+              <RestaurantCard
+                title={item.nama}
+                description={item.deskripsi}
+                imageUrl={item.foto_utama?.url || "/images/default.jpg"}
+                variant="recommendation"
+              />
+            </Link>
+          ))}
         </div>
       </main>
-
       <Footer />
     </>
   );
