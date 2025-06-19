@@ -1,23 +1,24 @@
-"use client"; // Harus di paling atas
+
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // ✅ Ganti ke navigation
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [kata_sandi, setKataSandi] = useState(""); // Mengganti password menjadi kata_sandi
+  const [kata_sandi, setKataSandi] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(""); // Reset error
-
-    // Logging data email dan kata_sandi untuk memastikan koneksi data
-    console.log("Logging in with:", { email, kata_sandi });
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login", {
@@ -56,6 +57,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
+
       {/* Kiri: Form Login */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12 bg-white">
         <h1 className="text-4xl font-bold mb-6">LOGO</h1>
@@ -74,6 +76,31 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          <div className="relative">
+            <label className="block mb-1 font-medium">Kata Sandi</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Kata Sandi"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+              value={kata_sandi}
+              onChange={(e) => setKataSandi(e.target.value)}
+              required
+            />
+
+            {/* Tombol ikon show/hide */}
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-[42px] right-3 text-gray-600 hover:text-gray-800 focus:outline-none"
+            >
+              {showPassword ? (
+                <AiOutlineEye size={22} />
+              ) : (
+                <AiOutlineEyeInvisible size={22} />
+              )}
+            </button>
+
           <div>
             <label className="block mb-1 font-medium">Kata Sandi</label>
             <input
@@ -110,7 +137,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-
       {/* Kanan: Gambar */}
       <div className="hidden md:block w-1/2">
         <img
@@ -121,4 +147,5 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
 }
