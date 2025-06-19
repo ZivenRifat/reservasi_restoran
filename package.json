@@ -11,6 +11,7 @@
   "dependencies": {
     "@react-google-maps/api": "^2.20.6",
     "@tailwindcss/line-clamp": "^0.4.4",
+    "dayjs": "^1.11.13",
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.503.0",
     "next": "^15.3.1",

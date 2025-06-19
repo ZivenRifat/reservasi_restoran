@@ -17,7 +17,7 @@ interface KonfirmasiPesananModalProps {
     email: string;
     nama: string;
     tanggal: string;
-    waktu: string;
+    jam: string;
     jumlah_orang: number;
     totalHarga: number;
     catatan?: string;
@@ -67,8 +67,8 @@ export default function KonfirmasiPesananModal({
             <span>{data.tanggal}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-semibold">Waktu</span>
-            <span>{data.waktu}</span>
+            <span className="font-semibold">jam</span>
+            <span>{data.jam}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-semibold">Jumlah Orang</span>

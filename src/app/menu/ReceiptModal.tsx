@@ -1,17 +1,47 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface ReceiptModalProps {
+export interface ReceiptModalProps {
   onClose: () => void;
   onFinish: () => void;
+  data: {
+    id: string;
+    namaPemesan: string;
+    phoneNumber: string;
+    email: string;
+    namaRestoran: string;
+    tanggal: string;
+    jam: string;
+    jumlah_orang: number;
+    totalHarga: number;
+    statusLog?: string[];
+    restoran_id: string;
+    kursi_id: string;
+    catatan: string;
+    menu: {
+      menu_id: string;
+      jumlah: number;
+    }[];
+  };
 }
 
-export default function ReceiptModal({ onClose, onFinish }: ReceiptModalProps) {
+export default function ReceiptModal({
+  onClose,
+  onFinish,
+  data,
+}: ReceiptModalProps) {
+  const router = useRouter();
+
+  const handleFinish = () => {
+    onFinish(); // trigger callback
+    router.push(`/restoran/${data.restoran_id}`); // redirect ke halaman restoran
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md relative">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[#481111]"
@@ -19,35 +49,50 @@ export default function ReceiptModal({ onClose, onFinish }: ReceiptModalProps) {
           <X className="w-6 h-6" />
         </button>
 
-        {/* Title */}
         <h2 className="text-xl font-bold text-center mb-4">Nota</h2>
+        <p className="text-center font-bold mb-4">ID RESERVASI: {data.id}</p>
 
-        {/* ID Reservasi */}
-        <p className="text-center font-bold mb-4">ID RESERVASI: 100##</p>
-
-        {/* Detail Pemesanan */}
         <div className="space-y-2 text-sm">
-          <p><strong>Nama Pemesan:</strong> Ziven Rifat</p>
-          <p><strong>Nomor Hp:</strong> 09876465xxx</p>
-          <p><strong>Email:</strong> ziven.ziven@gmail.com</p>
-          <p><strong>Nama Restoran:</strong> Warung Sambal Bakar</p>
-          <p><strong>Tanggal:</strong> Jumat 11 April, 2025</p>
-          <p><strong>Waktu:</strong> 10:00 - 10:30AM</p>
-          <p><strong>Jumlah Orang:</strong> 2</p>
-          <p><strong>Jumlah yang perlu dibayar:</strong> Rp 80.000</p>
-          <div className="text-sm mt-4">
-            <strong>Status:</strong>
-            <ul className="list-disc list-inside">
-              <li>Created at 9:05 WIB by customer</li>
-              <li>Deposited at 9:35 WIB</li>
-              <li>Come restaurant at 08:00 WIB</li>
-            </ul>
-          </div>
+          <p>
+            <strong>Nama Pemesan:</strong> {data.namaPemesan}
+          </p>
+          <p>
+            <strong>Nomor Hp:</strong> {data.phoneNumber}
+          </p>
+          <p>
+            <strong>Email:</strong> {data.email}
+          </p>
+          <p>
+            <strong>Nama Restoran:</strong> {data.namaRestoran}
+          </p>
+          <p>
+            <strong>Tanggal:</strong> {data.tanggal}
+          </p>
+          <p>
+            <strong>Waktu:</strong> {data.jam}
+          </p>
+          <p>
+            <strong>Jumlah Orang:</strong> {data.jumlah_orang}
+          </p>
+          <p>
+            <strong>Jumlah yang perlu dibayar:</strong> Rp{" "}
+            {data.totalHarga.toLocaleString("id-ID")}
+          </p>
+
+          {data.statusLog && (
+            <div className="text-sm mt-4">
+              <strong>Status:</strong>
+              <ul className="list-disc list-inside">
+                {data.statusLog.map((item, idx) => (
+                  <li key={idx}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
-        {/* Tombol Selesai */}
         <button
-          onClick={onFinish}
+          onClick={handleFinish}
           className="w-full py-2 mt-6 rounded-md bg-[#481111] text-white font-bold"
         >
           Selesai

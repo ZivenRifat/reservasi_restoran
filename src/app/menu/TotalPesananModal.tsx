@@ -19,7 +19,7 @@ const TotalPesananModal: React.FC<Props> = ({
   const getTotal = () => {
     const allItems = [...makanan, ...minuman];
     return Object.entries(cart).reduce((total, [id, qty]) => {
-      const item = allItems.find((i) => i.id === id);
+      const item = allItems.find((i) => i.menu_id === id);
       return total + (item ? Number(item.harga) * qty : 0);
     }, 0);
   };
@@ -57,7 +57,7 @@ const TotalPesananModal: React.FC<Props> = ({
         <h3 className="text-xl font-semibold mb-4">Total Pesanan</h3>
         <ul className="max-h-60 overflow-y-auto mb-6">
           {Object.entries(cart).map(([id, qty]) => {
-            const item = allItems.find((i) => i.id === id);
+            const item = allItems.find((i) => i.menu_id === id);
             if (!item) return null;
             return (
               <li key={id} className="flex justify-between mb-2">

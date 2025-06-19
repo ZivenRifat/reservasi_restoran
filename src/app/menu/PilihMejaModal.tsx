@@ -7,6 +7,7 @@ import ReceiptModal from "@/app/menu/ReceiptModal";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import type { MenuItem } from "@/app/types";
+import dayjs from "dayjs";
 
 interface Table {
   id: string;
@@ -25,22 +26,24 @@ interface ProfilPemesan {
 interface PilihMejaModalProps {
   onClose: () => void;
   onSubmit: (tableId: string) => void;
+  cart: { [menu_id: string]: number };
   menu?: MenuItem[];
   tables?: Table[];
-  restoranId: string;
+  restoran_id: string;
   jumlah_orang: string;
   tanggal: string;
-  waktu: string;
+  jam: string;
 }
 
 export default function PilihMejaModal({
   onClose,
   onSubmit,
+  cart,
   menu = [],
-  restoranId,
+  restoran_id,
   jumlah_orang,
   tanggal,
-  waktu,
+  jam,
 }: PilihMejaModalProps) {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -55,13 +58,12 @@ export default function PilihMejaModal({
 
   const router = useRouter();
 
-  const totalHarga = menu.reduce(
-    (total, item) => total + parseInt(item.harga),
-    0
-  );
+  const totalHarga = Object.entries(cart).reduce((total, [menu_id, jumlah]) => {
+    const item = menu.find((item) => item.menu_id === menu_id);
+    return item ? total + item.harga * jumlah : total;
+  }, 0);
 
   useEffect(() => {
-
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -70,6 +72,7 @@ export default function PilihMejaModal({
 
         if (!token) throw new Error("Token tidak ditemukan.");
 
+        // Fetch profil pemesan
         const profilRes = await fetch(
           "http://127.0.0.1:8000/api/pemesan/profil",
           {
@@ -87,15 +90,48 @@ export default function PilihMejaModal({
         const profilData = await profilRes.json();
         setProfil(profilData.data);
 
+        // Fetch data restoran
         const resRestoran = await fetch(
-          `http://127.0.0.1:8000/api/restoran/${restoranId}`
+          `http://127.0.0.1:8000/api/restoran/${restoran_id}`,
+          {
+            headers: {
+              Accept: "application/json",
+            },
+          }
         );
-        const dataRestoran = await resRestoran.json();
-        const { meja, denah_meja, nama } = dataRestoran.data;
 
-        setTables(meja.filter((m: Table) => m.status === "tersedia"));
-        setDenahMejaUrl(`http://127.0.0.1:8000/denah/${denah_meja}`);
-        setRestoranNama(nama);
+        if (!resRestoran.ok) {
+          const errText = await resRestoran.text();
+          console.error("Isi response:", errText);
+          throw new Error(
+            `Gagal ambil restoran: ${resRestoran.status} - ${resRestoran.statusText}`
+          );
+        }
+
+        console.log("restoran_id:", restoran_id);
+        const dataRestoran = await resRestoran.json();
+        const { meja = [], denah_meja, nama } = dataRestoran.data;
+
+        // Meja bisa kosong, jadi perlu fallback []
+        setTables(
+          Array.isArray(meja)
+            ? meja.filter((m: Table) => m.status === "tersedia")
+            : []
+        );
+        setRestoranNama(nama ?? "");
+
+        // Tangani URL denah_meja
+        if (
+          denah_meja &&
+          typeof denah_meja === "object" &&
+          denah_meja.nama_file
+        ) {
+          // Gunakan nama file dari database
+          const filePath = `http://127.0.0.1:8000/denah/${restoran_id}/${denah_meja.nama_file}`;
+          setDenahMejaUrl(filePath);
+        } else {
+          setDenahMejaUrl("");
+        }
       } catch (error: any) {
         console.error("Error saat mengambil data:", error.message);
         setError(error.message || "Terjadi kesalahan saat memuat data.");
@@ -105,9 +141,7 @@ export default function PilihMejaModal({
     };
 
     fetchData();
-  }, []);
-
-  // Siapkan data lengkap reservasi untuk dikirim ke backend
+  }, [restoran_id]);
 
   const submitReservation = async () => {
     if (!selectedTable) {
@@ -135,13 +169,27 @@ export default function PilihMejaModal({
       );
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Gagal melakukan reservasi");
+        let errorText = await res.text(); // Ambil raw text jika bukan JSON
+        console.error(
+          "Gagal reservasi. Status:",
+          res.status,
+          "Body:",
+          errorText
+        );
+
+        alert("Terjadi kesalahan saat mengirim reservasi:\n" + errorText);
+        return;
       }
 
       const data = await res.json();
       console.log("Reservasi sukses:", data);
 
+      // Simpan data backend untuk ditampilkan di nota
+      setReservationData((prev: any) => ({
+        ...prev,
+        nomor_reservasi: data.data.nomor_reservasi,
+        total_harga: data.data.total_harga,
+      }));
       setShowConfirmModal(false);
       setShowReceiptModal(true);
     } catch (err: any) {
@@ -158,19 +206,38 @@ export default function PilihMejaModal({
       return;
     }
 
-        const reservation = {
-    tanggal,
-    waktu,
-    jumlah_orang: parseInt(jumlah_orang),
-    catatan: "Mohon kursi dekat jendela.",
-    kursi_id: selectedTable,
-    menu: menu.map((item) => ({
-      id: item.id,
-      jumlah: 1,
-    })),
-  };
-  setReservationData(reservation);
-  setShowConfirmModal(true);
+    const selectedTableData = tables.find((t) => t.id === selectedTable);
+
+    const tanggalFormatted = dayjs(tanggal).format("YYYY-MM-DD");
+    const parseJam = (input: string): string => {
+      const parts = input.split(":");
+      if (parts.length !== 2) return "";
+      const [jam, menit] = parts;
+      return `${jam.padStart(2, "0")}:${menit.padStart(2, "0")}`;
+    };
+
+    const jamFormatted = parseJam(jam);
+
+    const reservation = {
+      restoran_id,
+      tanggal: tanggalFormatted,
+      jam: jamFormatted,
+      jumlah_orang: parseInt(jumlah_orang),
+      catatan: "Mohon kursi dekat jendela.",
+      nomor_kursi: selectedTableData?.nomor_kursi,
+      kursi_id: selectedTable,
+      menu: menu
+        .filter((item) => cart[item.menu_id])
+        .map((item) => ({
+          menu_id: item.menu_id,
+          nama: item.nama,
+          jumlah: cart[item.menu_id],
+          subtotal: item.harga * cart[item.menu_id],
+        })),
+    };
+
+    setReservationData(reservation);
+    setShowConfirmModal(true);
   };
 
   const handleConfirm = () => {
@@ -281,31 +348,51 @@ export default function PilihMejaModal({
             phoneNumber: profil.no_hp,
             email: profil.email,
             nama: restoranNama,
-            tanggal: new Date(reservationData.tanggal).toLocaleDateString(
-              "id-ID",
-              {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }
-            ),
-            waktu: reservationData.waktu + " WIB",
+            tanggal: reservationData.tanggal,
+            jam: reservationData.jam,
             jumlah_orang: reservationData.jumlah_orang,
             totalHarga,
             menu: menu.map((item) => ({
               ...item,
               jumlah: 1,
-              subtotal: parseInt(item.harga),
+              subtotal: item.harga,
             })),
           }}
         />
       )}
 
-      {showReceiptModal && (
+      {showReceiptModal && reservationData && profil && (
         <ReceiptModal
           onClose={() => setShowReceiptModal(false)}
           onFinish={handleFinish}
+          data={{
+            id: reservationData.nomor_reservasi,
+            namaPemesan: profil.nama,
+            phoneNumber: profil.no_hp,
+            email: profil.email,
+            namaRestoran: restoranNama,
+            tanggal: reservationData.tanggal,
+            jam: reservationData.jam,
+            jumlah_orang: reservationData.jumlah_orang,
+            totalHarga: reservationData.total_harga ?? totalHarga,
+            statusLog: [
+              `Created at ${new Date(
+                reservationData.created_at || Date.now()
+              ).toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })} WIB by customer`,
+              `Come restaurant at ${reservationData.jam} WIB`,
+            ],
+            restoran_id: reservationData.restoran_id,
+            kursi_id: reservationData.kursi_id,
+            catatan: reservationData.catatan ?? "",
+            menu:
+              reservationData.menu?.map((m: any) => ({
+                menu_id: m.menu_id,
+                jumlah: m.jumlah,
+              })) ?? [],
+          }}
         />
       )}
     </>

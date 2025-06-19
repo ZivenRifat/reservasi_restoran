@@ -11,12 +11,12 @@ export default function OrderForm({ restoranId }: OrderFormProps) {
   const router = useRouter();
   const [jumlahOrang, setJumlahOrang] = useState("1");
   const [tanggal, setTanggal] = useState("");
-  const [waktu, setWaktu] = useState("");
+  const [jam, setjam] = useState("");
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     router.push(
-      `/menu/${restoranId}?orang=${jumlahOrang}&tanggal=${tanggal}&waktu=${waktu}`
+      `/menu/${restoranId}?orang=${jumlahOrang}&tanggal=${tanggal}&jam=${jam}`
     );
   }
 
@@ -42,8 +42,8 @@ export default function OrderForm({ restoranId }: OrderFormProps) {
       <input
         type="time"
         className="w-full p-2 border rounded"
-        value={waktu}
-        onChange={(e) => setWaktu(e.target.value)}
+        value={jam}
+        onChange={(e) => setjam(e.target.value)}
         required
       />
       <button

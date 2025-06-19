@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = (token: string) => {
-    Cookies.set("auth_token", token, { expires: 7 }); // simpan 7 hari
+    Cookies.set("auth_token", token, { expires: 1 }); // simpan 1 hari
     setIsLoggedIn(true);
   };
 

@@ -9,11 +9,11 @@ import TotalPesananModal from "@/app/menu/TotalPesananModal";
 import type { MenuItem } from "@/app/types";
 
 const MenuPage = () => {
-  const { id: restoranId } = useParams();
+  const { id: restoran_id } = useParams();
   const searchParams = useSearchParams();
   const jumlah_orang = searchParams.get("orang") || "1";
   const tanggal = searchParams.get("tanggal") || "";
-  const waktu = searchParams.get("waktu") || "";
+  const jam = searchParams.get("jam") || "";
 
   const [makanan, setMakanan] = useState<MenuItem[]>([]);
   const [minuman, setMinuman] = useState<MenuItem[]>([]);
@@ -27,16 +27,27 @@ const MenuPage = () => {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!restoranId) return;
+    if (!restoran_id) return;
 
     const fetchMenu = async () => {
       setLoading(true);
       setError(null);
       try {
         const res = await fetch(
-          `http://127.0.0.1:8000/api/restoran/${restoranId}`
+          `http://127.0.0.1:8000/api/restoran/${restoran_id}`
         );
-        if (!res.ok) throw new Error("Gagal fetch detail restoran");
+        if (!res.ok) {
+          let errorText = await res.text(); // Ambil raw text jika bukan JSON
+          console.error(
+            "Gagal reservasi. Status:",
+            res.status,
+            "Body:",
+            errorText
+          );
+
+          alert("Terjadi kesalahan saat mengirim reservasi:\n" + errorText);
+          return;
+        }
 
         const json = await res.json();
         if (json.status !== "success") {
@@ -44,7 +55,7 @@ const MenuPage = () => {
         }
 
         const menuData: MenuItem[] = json.data.menu.map((item: any) => ({
-          id: item.id,
+          menu_id: item.id.toLowerCase(),
           nama: item.nama,
           harga: Number(item.harga),
           foto: `http://127.0.0.1:8000/menu/${item.foto}`,
@@ -54,8 +65,12 @@ const MenuPage = () => {
           highlight: item.highlight,
         }));
 
-        setMakanan(menuData.filter((item) => item.jenis === "makanan"));
-        setMinuman(menuData.filter((item) => item.jenis === "minuman"));
+        setMakanan(
+          menuData.filter((item) => item.jenis?.toLowerCase() === "makanan")
+        );
+        setMinuman(
+          menuData.filter((item) => item.jenis?.toLowerCase() === "minuman")
+        );
         setTables(json.data.meja || []);
       } catch (e: any) {
         setError(e.message);
@@ -65,38 +80,38 @@ const MenuPage = () => {
     };
 
     fetchMenu();
-  }, [restoranId]);
+  }, [restoran_id]);
 
-  const handleAdd = (id: string) => {
+  const handleAdd = (menu_id: string) => {
     setCart((prev) => ({
       ...prev,
-      [id]: prev[id] ? prev[id] : 1,
+      [menu_id]: prev[menu_id] ? prev[menu_id] : 1,
     }));
   };
 
-  const handleIncrement = (id: string) => {
+  const handleIncrement = (menu_id: string) => {
     setCart((prev) => ({
       ...prev,
-      [id]: (prev[id] || 0) + 1,
+      [menu_id]: (prev[menu_id] || 0) + 1,
     }));
   };
 
-  const handleDecrement = (id: string) => {
+  const handleDecrement = (menu_id: string) => {
     setCart((prev) => {
-      if (!prev[id]) return prev;
-      if (prev[id] === 1) {
+      if (!prev[menu_id]) return prev;
+      if (prev[menu_id] === 1) {
         const updated = { ...prev };
-        delete updated[id];
+        delete updated[menu_id];
         return updated;
       }
-      return { ...prev, [id]: prev[id] - 1 };
+      return { ...prev, [menu_id]: prev[menu_id] - 1 };
     });
   };
 
   const getTotal = () => {
     const allItems = [...makanan, ...minuman];
     return Object.entries(cart).reduce((total, [id, qty]) => {
-      const item = allItems.find((i) => i.id === id);
+      const item = allItems.find((i) => i.menu_id === id);
       return total + (item ? Number(item.harga) * qty : 0);
     }, 0);
   };
@@ -104,7 +119,7 @@ const MenuPage = () => {
   const renderItems = (items: MenuItem[]) =>
     items.map((item) => (
       <div
-        key={item.id}
+        key={item.menu_id}
         className="border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-200 rounded-lg p-4 flex flex-col justify-between items-start gap-2"
       >
         <div className="w-full flex items-center justify-between">
@@ -122,20 +137,20 @@ const MenuPage = () => {
           </div>
         </div>
 
-        {cart[item.id] ? (
+        {cart[item.menu_id] ? (
           <div className="flex items-center gap-4 mt-4">
             <button
               type="button"
               className="w-8 h-8 border rounded-full flex justify-center items-center text-lg font-bold select-none"
-              onClick={() => handleDecrement(item.id)}
+              onClick={() => handleDecrement(item.menu_id)}
             >
               −
             </button>
-            <span className="w-6 text-center">{cart[item.id]}</span>
+            <span className="w-6 text-center">{cart[item.menu_id]}</span>
             <button
               type="button"
               className="w-8 h-8 border rounded-full flex justify-center items-center text-lg font-bold select-none"
-              onClick={() => handleIncrement(item.id)}
+              onClick={() => handleIncrement(item.menu_id)}
             >
               +
             </button>
@@ -143,7 +158,7 @@ const MenuPage = () => {
         ) : (
           <button
             type="button"
-            onClick={() => handleAdd(item.id)}
+            onClick={() => handleAdd(item.menu_id)}
             className="border-2 border-[#481111] px-6 py-2 rounded-full text-sm font-semibold mt-4 hover:bg-red-50 text-[#481111]"
           >
             Tambah
@@ -210,64 +225,17 @@ const MenuPage = () => {
 
       {isPilihMejaOpen && (
         <PilihMejaModal
-          restoranId={restoranId as string}
+          restoran_id={restoran_id as string}
           menu={[...makanan, ...minuman]}
           tables={tables}
           jumlah_orang={jumlah_orang}
           tanggal={tanggal}
-          waktu={waktu}
+          jam={jam}
+          cart={cart}
           onClose={() => setIsPilihMejaOpen(false)}
-          onSubmit={async (tableId) => {
+          onSubmit={(tableId) => {
             setSelectedTable(tableId);
             setIsPilihMejaOpen(false);
-
-            const menuItems = Object.entries(cart).map(([menu_id, jumlah]) => ({
-              menu_id,
-              jumlah,
-            }));
-
-            const getCookie = (name: string) => {
-              const match = document.cookie.match(
-                new RegExp("(^| )" + name + "=([^;]+)")
-              );
-              if (match) return match[2];
-              return null;
-            };
-
-            const token = getCookie("token");
-
-            try {
-              const res = await fetch("http://127.0.0.1:8000/api/reservasi", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({
-                  restoran_id: restoranId,
-                  kursi_id: tableId,
-                  tanggal,
-                  waktu,
-                  jumlah_orang: Number(jumlah_orang),
-                  catatan: "Mohon kursi dekat jendela.",
-                  menu: menuItems,
-                }),
-              });
-
-              const json = await res.json();
-
-              if (!res.ok || json.status !== "success") {
-                alert(
-                  `Gagal reservasi: ${json.message || "Terjadi kesalahan"}`
-                );
-              } else {
-                alert("Reservasi berhasil!");
-                console.log("Reservasi:", json.data);
-              }
-            } catch (error) {
-              console.error("Error:", error);
-              alert("Terjadi kesalahan saat mengirim reservasi.");
-            }
           }}
         />
       )}
