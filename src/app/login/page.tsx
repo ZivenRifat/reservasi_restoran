@@ -18,7 +18,10 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError(""); // Reset error
+
+    // Logging data email dan kata_sandi untuk memastikan koneksi data
+    console.log("Logging in with:", { email, kata_sandi });
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login", {
@@ -49,6 +52,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
+      {/* Kiri: Form Login */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12 bg-white">
         <h1 className="text-4xl font-bold mb-6">LOGO</h1>
         <h2 className="text-xl font-bold mb-2">Selamat Datang!</h2>
