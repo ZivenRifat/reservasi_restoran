@@ -77,17 +77,6 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="relative">
-            <label className="block mb-1 font-medium">Kata Sandi</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Kata Sandi"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-              value={kata_sandi}
-              onChange={(e) => setKataSandi(e.target.value)}
-              required
-            />
-
             {/* Tombol ikon show/hide */}
             <button
               type="button"
@@ -147,5 +136,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}
 }
