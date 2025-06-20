@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Modal } from '../../Restoran/kelolaMenu/components/Modal';
-import { MenuItemForm } from '../../Restoran/kelolaMenu/components/MenuItemForm';
-import { MenuTable } from '../../Restoran/kelolaMenu/components/MenuTable';
-import { MenuHeader } from '../../Restoran/kelolaMenu/components/MenuHeader';
-import { MenuFilterSearch } from '../../Restoran/kelolaMenu/components/MenuFilterSearch';
-import { DeleteConfirmationModal } from '../../Restoran/kelolaMenu/components/DeleteConfirmationModal';
+import { Modal } from '../../restoran/kelolaMenu/components/Modal';
+import { MenuItemForm } from '../../restoran/kelolaMenu/components/MenuItemForm';
+import { MenuTable } from '../../restoran/kelolaMenu/components/MenuTable';
+import { MenuHeader } from '../../restoran/kelolaMenu/components/MenuHeader';
+import { MenuFilterSearch } from '../../restoran/kelolaMenu/components/MenuFilterSearch';
+import { DeleteConfirmationModal } from '../../restoran/kelolaMenu/components/DeleteConfirmationModal';
 import { API_URL } from '@/constant';
 
 const token = 'htojmxT3qwtSICLNEvIWk5hf1SWaJWROVwVU3Ecj1545d888'; //simpan di 

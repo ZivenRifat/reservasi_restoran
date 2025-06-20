@@ -13,8 +13,8 @@ import ReservasiTerbaruTable from './components/ReservasiTerbaruTable';
 import StatsCard from './components/StatsCard';
 
 // Import types and API service (path disesuaikan ke level global components)
-import { DashboardData, Reservasi } from '../../../components/types';
-import { restaurantApi } from '../../../components/api/restaurantAPI';
+import { DashboardData, Reservasi } from '../../../Components/types';
+import { restaurantApi } from '../../../Components/api/restaurantAPI';
 
 const RestaurantDashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
