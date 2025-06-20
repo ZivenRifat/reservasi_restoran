@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -19,37 +18,48 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, kata_sandi }), // Mengganti password menjadi kata_sandi
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, kata_sandi }),
       });
 
-      // Periksa status respons terlebih dahulu
-      if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(errorMessage || "Login failed, please try again.");
-      }
-
-      // Dapatkan data JSON dari respons
       const data = await response.json();
 
-      // Log data yang diterima dari server
-      console.log("Received data from API:", data);
+      if (!response.ok) {
+        setError(data.message || "Login gagal, silakan coba lagi.");
+        return;
+      }
 
-      if (data.token) {
-        localStorage.setItem("auth_token", data.token);
-        router.push("/#");
+      if (data.status === "success" && data.data?.token) {
+        const token = data.data.token;
+        const peran = data.data.user.peran; // <-- peran dari backend (admin, penyedia, pemesan)
+
+        login(token); // simpan token (misalnya ke cookie/context)
+
+        // Arahkan berdasarkan peran
+        switch (peran) {
+          case "admin":
+            window.location.href = "/admin/dashboard";
+            break;
+          case "penyedia":
+            window.location.href = "/restoran/dashboard";
+            break;
+          case "pemesan":
+            window.location.href = "/"; // atau halaman pemesan
+            break;
+          default:
+            setError("Peran tidak dikenali.");
+        }
       } else {
-        setError(data.message || "Login failed");
+        setError(data.message || "Login gagal, silakan coba lagi.");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong, please try again.");
+      setError("Terjadi kesalahan, silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +67,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-
-      {/* Kiri: Form Login */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12 bg-white">
         <h1 className="text-4xl font-bold mb-6">LOGO</h1>
         <h2 className="text-xl font-bold mb-2">Selamat Datang!</h2>
@@ -77,7 +85,21 @@ export default function LoginPage() {
             />
           </div>
 
+
+          <div className="relative">
+            <label className="block mb-1 font-medium">Kata Sandi</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Kata Sandi"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+              value={kata_sandi}
+              onChange={(e) => setKataSandi(e.target.value)}
+              required
+            />
+
+
             {/* Tombol ikon show/hide */}
+
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
@@ -90,16 +112,6 @@ export default function LoginPage() {
               )}
             </button>
 
-          <div>
-            <label className="block mb-1 font-medium">Kata Sandi</label>
-            <input
-              type="password"
-              placeholder="Kata Sandi"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-              value={kata_sandi} // Mengganti password menjadi kata_sandi
-              onChange={(e) => setKataSandi(e.target.value)} // Mengganti setPassword menjadi setKataSandi
-              required
-            />
             <p className="text-right text-sm text-blue-500 mt-1 cursor-pointer">
               Lupa kata sandi
             </p>
@@ -126,7 +138,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
-      {/* Kanan: Gambar */}
+
       <div className="hidden md:block w-1/2">
         <img
           src="/images/LoginPage.jpg"
