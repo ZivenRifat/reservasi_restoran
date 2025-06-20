@@ -85,6 +85,7 @@ export default function LoginPage() {
             />
           </div>
 
+
           <div className="relative">
             <label className="block mb-1 font-medium">Kata Sandi</label>
             <input
@@ -95,6 +96,9 @@ export default function LoginPage() {
               onChange={(e) => setKataSandi(e.target.value)}
               required
             />
+
+
+            {/* Tombol ikon show/hide */}
 
             <button
               type="button"
