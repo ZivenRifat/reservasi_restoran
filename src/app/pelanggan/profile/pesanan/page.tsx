@@ -7,8 +7,11 @@ import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/constant";
+import ReceiptModal, { ReceiptModalProps } from "../../menu/ReceiptModal";
 
 interface Pesanan {
+  reservasi_id: string;
   id_reservasi: string;
   foto_restoran: string;
   nama_restoran: string;
@@ -18,6 +21,8 @@ interface Pesanan {
 }
 
 export default function PesananPage() {
+  const [selectedNota, setSelectedNota] = useState<ReceiptModalProps["data"] | null>(null);
+  const [isNotaOpen, setIsNotaOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [pesanan, setPesanan] = useState<Pesanan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,28 +39,79 @@ export default function PesananPage() {
     router.replace("/");
   };
 
+  const handleLihatNota = async (reservasiId: string) => {
+    const token = Cookies.get("auth_token");
+    if (!reservasiId) {
+      alert("ID Reservasi tidak valid.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/pemesan/reservasi/lihat-nota/${reservasiId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Gagal mengambil data nota.");
+      }
+
+      const responseData = await res.json();
+      const nota = responseData.nota;
+      if (!nota) {
+        throw new Error("Format data nota tidak sesuai.");
+      }
+      
+      // REVISI FINAL: Membuat objek data sesuai permintaan ReceiptModalProps
+      const notaData: ReceiptModalProps["data"] = {
+        // Mengirim ID singkat (nomor_reservasi) ke properti 'id' modal
+        id: nota.nomor_reservasi, 
+        
+        namaPemesan: nota.nama,
+        phoneNumber: nota.no_hp,
+        email: nota.email,
+        namaRestoran: nota.nama_restoran,
+        tanggal: nota.tanggal,
+        
+        // Mengirim waktu mulai ke properti 'jam' sesuai permintaan modal
+        jam: nota.waktu, 
+        
+        jumlah_orang: nota.jumlah_orang,
+        totalHarga: parseInt(nota.total_harga.replace(/[^0-9]/g, ''), 10) || 0,
+        catatan: nota.catatan,
+        menu: nota.menu || [],
+        restoran_id: nota.restoran_id,
+        kursi_id: nota.kursi_id,
+      };
+
+      setSelectedNota(notaData);
+      setIsNotaOpen(true);
+    } catch (err: any) {
+      console.error("Gagal mengambil nota:", err);
+      alert(err.message || "Terjadi kesalahan saat mengambil nota.");
+    }
+  };
+
   useEffect(() => {
     const fetchPesanan = async () => {
       const token = Cookies.get("auth_token");
-
       if (!token) {
         setError("Token tidak tersedia.");
         setLoading(false);
         return;
       }
-
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/pemesan/reservasi/pesanan-saya", {
+        const res = await fetch(`${API_URL}/api/pemesan/reservasi/pesanan-saya`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         });
-
         if (!res.ok) {
           throw new Error("Gagal mengambil data pesanan.");
         }
-
         const data = await res.json();
         setPesanan(data.data || []);
       } catch (err) {
@@ -65,20 +121,16 @@ export default function PesananPage() {
         setLoading(false);
       }
     };
-
     fetchPesanan();
   }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Navbar />
-
       <div className="flex flex-1">
         <ProfileSidebar openLogoutModal={openLogoutModal} />
-
         <div className="flex-1 p-10">
           <h1 className="text-3xl font-bold mb-6">Pesanan Saya</h1>
-
           {loading ? (
             <p>Memuat data pesanan...</p>
           ) : error ? (
@@ -88,11 +140,11 @@ export default function PesananPage() {
           ) : (
             pesanan.map((item) => (
               <div
-                key={item.id_reservasi}
+                key={item.reservasi_id}
                 className="bg-white rounded shadow p-4 flex gap-4 mb-4"
               >
                 <img
-                  src={`http://127.0.0.1:8000/foto/${item.foto_restoran}`}
+                  src={`${API_URL}/foto/${item.foto_restoran}`}
                   alt="Restoran"
                   className="w-40 h-32 rounded object-cover"
                 />
@@ -107,19 +159,24 @@ export default function PesananPage() {
                   <p className="text-sm text-gray-700">
                     {item.jumlah_orang} Orang
                   </p>
-                  <p className="text-sm mt-2 text-red-500">
-                    Jumlah yang belum dibayarkan: {item.total_harga} –{" "}
-                    <span className="underline cursor-pointer">Lihat Nota</span>
-                  </p>
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-sm text-red-500">
+                      Jumlah yang belum dibayarkan: {item.total_harga}
+                    </p>
+                    <span
+                      className="underline cursor-pointer text-blue-600 font-semibold"
+                      onClick={() => handleLihatNota(item.reservasi_id)}
+                    >
+                      Lihat Nota
+                    </span>
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
-
       <Footer />
-
       {isLogoutModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl text-center max-w-md">
@@ -141,6 +198,13 @@ export default function PesananPage() {
             </div>
           </div>
         </div>
+      )}
+      {selectedNota && isNotaOpen && (
+        <ReceiptModal
+          data={selectedNota}
+          onClose={() => setIsNotaOpen(false)}
+          onFinish={() => setIsNotaOpen(false)}
+        />
       )}
     </div>
   );

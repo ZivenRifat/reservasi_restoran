@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import ProfileSidebar from "@/Components/ProfileSidebar";
 import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
+import { API_URL } from "@/constant";
 
 interface UserProfile {
   nama: string;
@@ -41,7 +42,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/pemesan/profil", {
+        const res = await fetch(`${API_URL}/api/pemesan/profil`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -80,7 +81,6 @@ export default function ProfilePage() {
             <p>Memuat data profil...</p>
           ) : profile ? (
             <>
-              <p className="text-gray-600 mb-6">{profile.email}</p>
               <form className="space-y-4 max-w-xl">
                 <div>
                   <label className="block mb-1">Nama</label>
@@ -112,7 +112,7 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block mb-1">Password</label>
                   <input
                     type="password"
@@ -140,7 +140,7 @@ export default function ProfilePage() {
                   >
                     Submit
                   </button>
-                </div>
+                </div> */}
               </form>
             </>
           ) : (

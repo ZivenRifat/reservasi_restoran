@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Navbar from '@/Components/Navbar';
 import Footer from '@/Components/Footer';
 import RestaurantCard from '@/Components/RestaurantCard';
+import { API_URL } from '@/constant';
 
 type Restaurant = {
   id: string;
@@ -30,7 +31,7 @@ const SearchPage = () => {
       setError(null);
 
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/restoran?search=${encodeURIComponent(query)}`);
+        const res = await fetch(`${API_URL}/api/restoran?search=${encodeURIComponent(query)}`);
         const json = await res.json();
 
         if (json.status === 'success') {

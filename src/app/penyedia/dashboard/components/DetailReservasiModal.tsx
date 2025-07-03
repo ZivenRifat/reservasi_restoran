@@ -1,4 +1,8 @@
 import React from 'react';
+<<<<<<< HEAD
+import { X, Check, Printer } from 'lucide-react';
+import { Reservasi } from '../../../../Components/types'; // Path disesuaikan
+=======
 import { X, Printer, Check } from 'lucide-react';
 
 export interface Reservasi {
@@ -12,6 +16,7 @@ export interface Reservasi {
   no_telepon?: string;
   catatan?: string;
 }
+>>>>>>> origin/main
 
 interface DetailReservasiModalProps {
   reservasi: Reservasi | null;

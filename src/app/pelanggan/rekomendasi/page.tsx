@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
 import RestaurantCard from "@/Components/RestaurantCard";
+import { API_URL } from '@/constant';
 
 type Restaurant = {
   id: string;
@@ -21,7 +22,7 @@ const RekomendasiPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/rekomendasi');
+        const res = await fetch(`${API_URL}/api/rekomendasi`);
         const json = await res.json();
         setRestoran(json.data || []);
       } catch (error) {

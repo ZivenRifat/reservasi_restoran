@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
 import RestaurantCard from "@/Components/RestaurantCard";
+import { API_URL } from '@/constant';
 
 type Restaurant = {
   id: string;
@@ -21,7 +22,7 @@ const TerdekatPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/terdekat?latitude=0&longitude=0');
+        const res = await fetch(`${API_URL}/api/terdekat?latitude=0&longitude=0`);
         const json = await res.json();
         setRestoran(json.data || []);
       } catch (error) {

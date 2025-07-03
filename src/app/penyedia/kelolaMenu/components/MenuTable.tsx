@@ -1,15 +1,32 @@
 import React from 'react';
 import { Pencil, Trash2, ImageIcon } from 'lucide-react';
+<<<<<<< HEAD
+import { API_URL } from '@/constant';
+
+interface MenuItem {
+  id?: string;
+  nama: string;
+  harga: string;
+  deskripsi: string;
+  status: string;
+  foto: string | File;
+}
+=======
 // IMPOR DEFINISI MenuItem DARI page.tsx
 import { MenuItem } from '../page'; // <--- PASTIKAN PATH INI SESUAI DENGAN LOKASI page.tsx ANDA
+>>>>>>> origin/main
 
 interface MenuTableProps {
   menuItems: MenuItem[];
   isLoading: boolean;
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
+<<<<<<< HEAD
+  BASE_URL: string;
+=======
   BASE_IMAGE_SERVER_URL: string;
   disabledActions: boolean; // Menambahkan ini sebagai prop
+>>>>>>> origin/main
 }
 
 export const MenuTable: React.FC<MenuTableProps> = ({
@@ -17,8 +34,12 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+<<<<<<< HEAD
+  BASE_URL,
+=======
   BASE_IMAGE_SERVER_URL,
   disabledActions, // Menerima prop disabledActions
+>>>>>>> origin/main
 }) => {
   const formatCurrency = (value: string): string => {
     const numValue = parseInt(value, 10);
@@ -31,18 +52,23 @@ export const MenuTable: React.FC<MenuTableProps> = ({
 
   const getImageUrl = (foto: string | File): string => {
     if (foto instanceof File) {
-      return `${BASE_IMAGE_SERVER_URL}menu/placeholder-image.png`;
+      return `${API_URL}menu/placeholder-image.png`;
     }
     
     if (!foto || foto === '') {
-      return `${BASE_IMAGE_SERVER_URL}menu/placeholder-image.png`;
+      return `${API_URL}menu/placeholder-image.png`;
     }
     
     if (foto.startsWith('http')) {
       return foto;
     }
     
+<<<<<<< HEAD
+    // Jika foto hanya nama file, gabungkan dengan base URL
+    return `${API_URL}menu/${foto}`;
+=======
     return `${BASE_IMAGE_SERVER_URL}menu/${foto}`;
+>>>>>>> origin/main
   };
 
   const getStatusDisplay = (status: string): string => {
@@ -73,7 +99,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>): void => {
     const target = e.target as HTMLImageElement;
-    target.src = `${BASE_IMAGE_SERVER_URL}menu/placeholder-image.png`;
+    target.src = `${API_URL}menu/placeholder-image.png`;
   };
 
   const handleEdit = (item: MenuItem): void => {

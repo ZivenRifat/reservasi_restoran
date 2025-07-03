@@ -1,5 +1,11 @@
 'use client';
 
+<<<<<<< HEAD
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Untuk navigasi atau refresh
+import React from 'react'; // Import React karena menggunakan React.ChangeEvent/FormEvent
+
+=======
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -27,12 +33,30 @@ function getCookie(name: string): string | null {
 }
 
 // --- Component ---
+>>>>>>> origin/main
 export default function PengaturanPage() {
   const [formData, setFormData] = useState({
     nama: '',
     email: '',
     no_hp: '',
     nama_restoran: '',
+<<<<<<< HEAD
+    lokasi: '', // Menggunakan 'lokasi' untuk Alamat
+    deskripsi: '',
+    surat_halal: '',
+    nib: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Anotasi tipe untuk error state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter(); // Inisialisasi useRouter
+
+  const API_BASE_URL = 'http://127.0.0.1:8000';
+  const TOKEN = '5l1oDsKiycT1XIAfZHl95AefT9jRUAyyLLgn7cDP0a7ef34d'; // Token Anda
+
+  // Fungsi untuk mengambil data pengaturan
+  const fetchPengaturan = async () => {
+=======
     lokasi: '',
     deskripsi: '',
     nib: '',
@@ -64,13 +88,18 @@ export default function PengaturanPage() {
       return;
     }
 
+>>>>>>> origin/main
     setLoading(true);
     setError(null);
     try {
       const response = await fetch(`${API_BASE_URL}/api/penyedia/restoran`, {
         method: 'GET',
         headers: {
+<<<<<<< HEAD
+          'Authorization': `Bearer ${TOKEN}`,
+=======
           'Authorization': `Bearer ${AUTH_TOKEN}`,
+>>>>>>> origin/main
           'Content-Type': 'application/json',
         },
       });
@@ -81,6 +110,24 @@ export default function PengaturanPage() {
       }
 
       const result = await response.json();
+<<<<<<< HEAD
+      // Pastikan struktur data sesuai dengan yang diharapkan
+      if (result.status === 'success' && result.data) {
+        setFormData({
+          nama: result.data.nama || '',
+          email: result.data.email || '',
+          no_hp: result.data.no_hp || '',
+          nama_restoran: result.data.nama_restoran || '',
+          lokasi: result.data.lokasi || '',
+          deskripsi: result.data.deskripsi || '',
+          surat_halal: result.data.surat_halal || '',
+          nib: result.data.nib || '',
+        });
+      } else {
+        throw new Error('Format data respons tidak sesuai.');
+      }
+    } catch (err: unknown) { // Perbaikan di sini: 'err' is of type 'unknown'.
+=======
       if (result.status === 'success' && result.data) {
         const { data } = result;
         setFormData({
@@ -120,6 +167,7 @@ export default function PengaturanPage() {
         throw new Error('Format data respons tidak sesuai.');
       }
     } catch (err: unknown) {
+>>>>>>> origin/main
       console.error('Error fetching pengaturan:', err);
       let errorMessage = 'Terjadi kesalahan saat mengambil data.';
       if (err instanceof Error) {
@@ -129,6 +177,17 @@ export default function PengaturanPage() {
     } finally {
       setLoading(false);
     }
+<<<<<<< HEAD
+  };
+
+  // Panggil fetchPengaturan saat komponen di-mount
+  useEffect(() => {
+    fetchPengaturan();
+  }, []); // Array dependensi kosong agar hanya berjalan sekali saat mount
+
+  // Handler untuk perubahan input form
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => { // Perbaikan di sini: Parameter 'e' implicitly has an 'any' type.
+=======
   }, [API_BASE_URL, AUTH_TOKEN, router]);
 
   useEffect(() => {
@@ -136,11 +195,45 @@ export default function PengaturanPage() {
   }, [fetchPengaturan]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+>>>>>>> origin/main
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
     }));
+<<<<<<< HEAD
+  };
+
+  // Handler untuk submit form (update pengaturan)
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => { // Perbaikan di sini: Parameter 'e' implicitly has an 'any' type.
+    e.preventDefault(); // Mencegah refresh halaman
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/penyedia/restoran`, {
+        method: 'POST', // Menggunakan POST untuk update sesuai instruksi
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData), // Kirim formData sebagai body JSON
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Gagal memperbarui data pengaturan.');
+      }
+
+      const result = await response.json();
+      if (result.status === 'success') {
+        alert('Pengaturan berhasil diperbarui!');
+        fetchPengaturan(); // Muat ulang data setelah update berhasil
+      } else {
+        throw new Error(result.message || 'Gagal memperbarui pengaturan.');
+      }
+    } catch (err: unknown) { // Perbaikan di sini: 'err' is of type 'unknown'.
+=======
   }, []);
 
   const handleHalalFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -284,6 +377,7 @@ export default function PengaturanPage() {
       await fetchPengaturan(); // Reload data after successful update
       
     } catch (err: unknown) {
+>>>>>>> origin/main
       console.error('Error updating pengaturan:', err);
       let errorMessage = 'Terjadi kesalahan saat memperbarui pengaturan.';
       if (err instanceof Error) {
@@ -294,6 +388,41 @@ export default function PengaturanPage() {
     } finally {
       setIsSubmitting(false);
     }
+<<<<<<< HEAD
+  };
+
+  if (loading) {
+    return <div className="max-w-5xl mx-auto p-6 text-center">Memuat data pengaturan...</div>;
+  }
+
+  if (error) {
+    return <div className="max-w-5xl mx-auto p-6 text-center text-red-600">Error: {error}</div>;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <form onSubmit={handleSubmit}> {/* Gunakan form dan onSubmit */}
+        {/* Grid untuk dua kolom pertama */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block font-medium mb-1">Nama</label>
+            <input
+              type="text"
+              name="nama" // Tambahkan atribut name
+              value={formData.nama} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Nama Restoran</label>
+            <input
+              type="text"
+              name="nama_restoran" // Tambahkan atribut name
+              value={formData.nama_restoran} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+=======
   }, [API_BASE_URL, AUTH_TOKEN, formData, halalFile, profilePhoto, restaurantPhotos, fetchPengaturan, router]);
 
   const openModal = useCallback((imageUrl: string) => {
@@ -396,10 +525,103 @@ export default function PengaturanPage() {
               value={formData.nama_restoran}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#A32A2A] focus:border-transparent transition"
+>>>>>>> origin/main
             />
           </div>
         </div>
 
+<<<<<<< HEAD
+        {/* Field lainnya satu kolom */}
+        <div className="space-y-4">
+          <div>
+            <label className="block font-medium mb-1">Alamat</label>
+            <input
+              type="text"
+              name="lokasi" // Tambahkan atribut name, sesuaikan dengan 'lokasi' di API
+              value={formData.lokasi} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Deskripsi</label>
+            <input
+              type="text"
+              name="deskripsi" // Tambahkan atribut name
+              value={formData.deskripsi} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Email</label>
+            <input
+              type="email"
+              name="email" // Tambahkan atribut name
+              value={formData.email} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">No HP</label>
+            <input
+              type="tel"
+              name="no_hp" // Tambahkan atribut name
+              value={formData.no_hp} // Gunakan value dari state
+              onChange={handleChange} // Tambahkan onChange handler
+              className="w-full border rounded px-3 py-2"
+            />
+          </div>
+
+          {/* Grid untuk dua kolom lagi */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-medium mb-1">Surat Keterangan Halal</label>
+              <input
+                type="text"
+                name="surat_halal" // Tambahkan atribut name
+                value={formData.surat_halal} // Gunakan value dari state
+                onChange={handleChange} // Tambahkan onChange handler
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Nomor Induk Berusaha</label>
+              <input
+                type="text"
+                name="nib" // Tambahkan atribut name
+                value={formData.nib} // Gunakan value dari state
+                onChange={handleChange} // Tambahkan onChange handler
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Tombol */}
+        <div className="mt-6 flex gap-4 justify-center">
+          <button
+            type="button" // Gunakan type="button" agar tidak submit form
+            onClick={() => {
+              // Handle cancel, misalnya reset form atau navigasi
+              fetchPengaturan(); // Muat ulang data awal
+              alert('Perubahan dibatalkan!');
+            }}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit" // Gunakan type="submit" untuk memicu handleSubmit
+            disabled={isSubmitting} // Nonaktifkan tombol saat sedang submit
+            className="bg-[#3d0d0d] hover:bg-[#2e0a0a] text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? 'Menyimpan...' : 'Save'}
+          </button>
+        </div>
+      </form>
+=======
         <div className="space-y-6 mb-6">
           <div>
             <label htmlFor="lokasi" className="block font-medium text-gray-700 mb-1">Alamat Lengkap</label>
@@ -553,6 +775,7 @@ export default function PengaturanPage() {
           </div>
         </div>
       )}
+>>>>>>> origin/main
     </div>
   );
 }

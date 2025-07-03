@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Navbar from "@/Components/Navbar";
 import Footer from "@/Components/Footer";
-import PilihMejaModal from "@/app/menu/PilihMejaModal";
-import TotalPesananModal from "@/app/menu/TotalPesananModal";
+import PilihMejaModal from "../../menu/PilihMejaModal";
+import TotalPesananModal from "../../menu/TotalPesananModal";
 import type { MenuItem } from "@/app/types";
 
 const MenuPage = () => {

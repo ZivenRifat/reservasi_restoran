@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
+import { Clock, X } from 'lucide-react';
+import { JamOperasional } from '../../../../Components/types'; // Path disesuaikan
+=======
 import { Clock, X, Check } from 'lucide-react'; // Menambahkan ikon Check untuk tombol Simpan
 
 // Interface JamOperasional dipindahkan ke sini karena digunakan di sini
@@ -10,6 +14,7 @@ export interface JamOperasional {
   created_at?: string;
   updated_at?: string;
 }
+>>>>>>> origin/main
 
 interface OperationalSettingsProps {
   status: 'buka' | 'tutup'; // Status ini akan ditentukan secara otomatis dari parent
