@@ -1,3 +1,4 @@
+// FILE: NewUsers.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -69,7 +70,7 @@ export function NewUsers({ token, onTotalChange = () => {}, onAuthError = () => 
     };
 
     fetchUsers();
-  }, []);
+  }, [token, onAuthError, onTotalChange]); // Ditambahkan token, onAuthError, onTotalChange ke dependency array
 
   const handleDetailClick = (user: User) => {
     setSelectedUser(user);

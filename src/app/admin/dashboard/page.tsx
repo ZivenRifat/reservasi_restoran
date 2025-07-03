@@ -1,14 +1,66 @@
+// app/admin/dashboard/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getCookie } from 'cookies-next';
 import { NewRestaurant } from "@/app/admin/dashboard/components/NewRestaurants";
 import { NewUsers } from "@/app/admin/dashboard/components/NewUsers";
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
-  const token = 'YCXYVZHkCUCc9xNZsOU19q5FqxfQ8oKA3bHLhAoR1e10ab98';
-
+  const [token, setToken] = useState<string | undefined>(undefined);
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [totalRestaurants, setTotalRestaurants] = useState<number>(0);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      // Mengubah 'your-auth-token-name' menjadi 'auth_token' sesuai dengan gambar cookie Anda
+      const storedToken = await getCookie('auth_token'); 
+      setToken(typeof storedToken === 'string' ? storedToken : undefined);
+
+      if (!storedToken) {
+        console.log('No token found, perhaps redirect to login?');
+        // router.push('/login'); // Uncomment and replace with your login path
+      }
+    };
+
+    fetchToken();
+  }, []);
+
+  const handleAuthError = () => {
+    console.log('Authentication error, session expired or invalid token.');
+    // Opsional: hapus cookie jika token invalid
+    // deleteCookie('auth_token'); 
+    router.push('/login'); // Redirect ke halaman login
+  };
+
+  if (token === undefined) {
+    return (
+      <div className="text-center py-8">
+        <div className="inline-flex items-center space-x-2 text-gray-500">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-blue-500"></div>
+          <span>Memuat sesi...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="text-center py-8">
+        <div className="inline-flex flex-col items-center space-y-2 text-red-600">
+          <span>Anda belum login atau sesi telah berakhir.</span>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-[#6A1B1A] hover:bg-[#8B2C2B] text-white text-sm px-4 py-2 rounded-lg transition-colors duration-200"
+          >
+            Login Sekarang
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8 bg-gray-50 min-h-screen">
@@ -72,10 +124,10 @@ export default function Page() {
       {/* Dua Tabel Sampingan */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-          <NewRestaurant token={token} onTotalChange={setTotalRestaurants} limit={5} />
+          {token && <NewRestaurant token={token} onTotalChange={setTotalRestaurants} onAuthError={handleAuthError} limit={5} />}
         </div>
         <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-          <NewUsers token={token} onTotalChange={setTotalUsers} />
+          {token && <NewUsers token={token} onTotalChange={setTotalUsers} onAuthError={handleAuthError} />}
         </div>
       </div>
     </div>

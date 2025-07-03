@@ -7,12 +7,14 @@ type User = {
   peran: string;
   no_hp: string;
   created_at: string;
+  NIB?: string; // Menambahkan NIB sebagai opsional, karena hanya ada untuk pemilik
 };
 
 type EditForm = {
   nama: string;
   email: string;
   no_hp: string;
+  NIB?: string; // Menambahkan NIB ke dalam EditForm
 };
 
 interface EditUserModalProps {
@@ -39,7 +41,7 @@ export default function EditUserModal({
   if (!isOpen || !user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -92,6 +94,21 @@ export default function EditUserModal({
               placeholder="Masukkan nomor HP"
             />
           </div>
+
+          {activeTab === 'pemilik' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                NIB
+              </label>
+              <input
+                type="text"
+                value={editForm.NIB || ''} // Gunakan NIB dari editForm
+                onChange={(e) => onFormChange({...editForm, NIB: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Masukkan NIB"
+              />
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
