@@ -1,6 +1,9 @@
+// src/app/admin/profile/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { getCookie, deleteCookie } from 'cookies-next'; // Import getCookie dan deleteCookie
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 interface AdminProfileResponse {
   status: string;
@@ -23,51 +26,86 @@ interface AdminUpdateResponse {
 }
 
 // Gunakan variabel lingkungan untuk URL dasar jika memungkinkan (misalnya: process.env.NEXT_PUBLIC_API_BASE_URL)
-const API_BASE_URL = 'http://127.0.0.1:8000/api'; 
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 export default function ProfileAdmin() {
-  const HARDCODED_FALLBACK_TOKEN = 'YCXYVZHkCUCc9xNZsOU19q5FqxfQ8oKA3bHLhAoR1e10ab98'; 
-  
+  // Hapus HARDCODED_FALLBACK_TOKEN dan penggunaan localStorage
+  // const HARDCODED_FALLBACK_TOKEN = 'YCXYVZHkCUCc9xNZsOU19q5FqxfQ8oKA3bHLhAoR1e10ab98';
+
   const [form, setForm] = useState({
     nama: '',
     email: '',
-    noHp: '', 
-    password: '',
-    passwordBaru: '',
+    noHp: '',
+    password: '', // Current password
+    passwordBaru: '', // New password
   });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // State untuk token otentikasi
+  const [authToken, setAuthToken] = useState<string | undefined>(undefined);
+  const router = useRouter(); // Inisialisasi router
+
+  // Handler untuk otentikasi gagal
+  const handleAuthError = useCallback(() => {
+    setError('Sesi Anda telah berakhir. Silakan login kembali.');
+    deleteCookie('auth_token'); // Hapus cookie yang mungkin sudah kadaluarsa/invalid
+    router.push('/login'); // Arahkan ke halaman login
+  }, [router]);
+
+  // Effect untuk mengambil token dari cookie saat komponen dimuat
+  useEffect(() => {
+    const retrieveToken = async () => {
+      const storedToken = await getCookie('auth_token'); // Menggunakan nama cookie yang benar
+      if (typeof storedToken === 'string') {
+        setAuthToken(storedToken);
+      } else {
+        console.log('No authentication token found for ProfileAdmin. Redirecting to login.');
+        setAuthToken(undefined); // Pastikan state token diatur ke undefined
+        // Langsung panggil handleAuthError untuk redirect
+        handleAuthError();
+      }
+    };
+    retrieveToken();
+  }, [handleAuthError]); // handleAuthError sebagai dependency karena useCallback
+
+  // Effect untuk mengambil profil admin setelah token tersedia
   useEffect(() => {
     const fetchAdminProfile = async () => {
+      if (authToken === undefined) { // Tunggu hingga token selesai diambil dari cookie
+        setLoading(true); // Tetap loading jika token belum siap
+        return;
+      }
+      if (!authToken) { // Jika token kosong (setelah mencoba ambil), jangan lanjutkan
+        setLoading(false);
+        setError('Token otentikasi tidak ditemukan. Silakan login.');
+        return;
+      }
+
       setLoading(true);
       setError(null);
       setSuccessMessage(null);
 
-      const authToken = localStorage.getItem('authToken') || HARDCODED_FALLBACK_TOKEN;
-
-      if (!authToken || authToken.trim() === '') {
-        setError('Token otentikasi tidak valid atau kosong. Silakan login kembali.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        // PERBAIKAN: Menggunakan endpoint GET yang benar
-        const requestUrl = `${API_BASE_URL}/admin/profile/edit`; 
+        const requestUrl = `${API_BASE_URL}/admin/profile/edit`;
         console.log('DEBUG (GET): Mengambil data dari URL:', requestUrl);
 
         const res = await fetch(requestUrl, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${authToken}`,
+            'Authorization': `Bearer ${authToken}`, // Gunakan authToken dari state
             'Accept': 'application/json',
           },
         });
 
         console.log('DEBUG (GET): Status respons:', res.status);
+
+        if (res.status === 401) {
+          handleAuthError(); // Panggil handler auth error
+          return;
+        }
 
         if (!res.ok) {
           let errorMessage = `Request gagal dengan status ${res.status}: ${res.statusText}`;
@@ -78,9 +116,7 @@ export default function ProfileAdmin() {
             console.log('Tidak dapat mem-parse error response sebagai JSON');
           }
 
-          if (res.status === 401) {
-            throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
-          } else if (res.status === 404) {
+          if (res.status === 404) {
             throw new Error('Data profil admin tidak ditemukan. Periksa token atau hubungi administrator sistem.');
           } else {
             throw new Error(errorMessage);
@@ -93,7 +129,7 @@ export default function ProfileAdmin() {
         } catch (jsonError) {
           throw new Error(`Respons bukan JSON atau kosong: ${res.status} ${res.statusText}`);
         }
-        
+
         console.log('DEBUG (GET): Respons dari API:', responseData);
 
         if (responseData.status !== 'success' || !responseData.data) {
@@ -109,9 +145,9 @@ export default function ProfileAdmin() {
         setForm({
           nama: data.nama,
           email: data.email,
-          noHp: data.no_hp || '', 
-          password: '', 
-          passwordBaru: '', 
+          noHp: data.no_hp || '',
+          password: '',
+          passwordBaru: '',
         });
 
       } catch (err) {
@@ -123,7 +159,7 @@ export default function ProfileAdmin() {
     };
 
     fetchAdminProfile();
-  }, []); 
+  }, [authToken, handleAuthError]); // authToken dan handleAuthError sebagai dependency
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -136,10 +172,8 @@ export default function ProfileAdmin() {
     setError(null);
     setSuccessMessage(null);
 
-    const authToken = localStorage.getItem('authToken') || HARDCODED_FALLBACK_TOKEN;
-
-    if (!authToken || authToken.trim() === '') {
-      setError('Token otentikasi tidak valid atau kosong. Silakan login kembali.');
+    if (!authToken) { // Pengecekan token sebelum submit
+      setError('Token otentikasi tidak ditemukan. Silakan login.');
       setLoading(false);
       return;
     }
@@ -148,54 +182,56 @@ export default function ProfileAdmin() {
       const payload: Record<string, string> = {
         nama: form.nama,
         email: form.email,
-        no_hp: form.noHp, 
+        no_hp: form.noHp,
       };
 
       if (form.passwordBaru && form.passwordBaru.trim() !== '') {
         if (!form.password || form.password.trim() === '') {
           throw new Error('Password saat ini harus diisi jika ingin mengubah password.');
         }
-        payload.kata_sandi = form.password; 
-        payload.kata_sandi_baru = form.passwordBaru; 
+        payload.kata_sandi = form.password;
+        payload.kata_sandi_baru = form.passwordBaru;
       }
 
-      // PERBAIKAN: Menggunakan endpoint PUT yang benar (termasuk trailing slash jika diperlukan backend)
-      const requestUrl = `${API_BASE_URL}/admin/profile/edit/`; // Pastikan ini sesuai dengan backend Anda
+      const requestUrl = `${API_BASE_URL}/admin/profile/edit`; // Pastikan ini sesuai dengan backend Anda
       console.log('DEBUG (PUT): Mengirim data ke URL:', requestUrl);
       console.log('DEBUG (PUT): Payload yang dikirim:', payload);
 
       const res = await fetch(requestUrl, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
+          'Authorization': `Bearer ${authToken}`, // Gunakan authToken dari state
           'Accept': 'application/json',
-          'Content-Type': 'application/json', 
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
 
       console.log('DEBUG (PUT): Status respons:', res.status);
 
+      if (res.status === 401) {
+        handleAuthError();
+        return;
+      }
+
       if (!res.ok) {
         let errorMessage = `Update gagal dengan status ${res.status}: ${res.statusText}`;
-        
+
         try {
           const errorData = await res.json();
           console.log('DEBUG (PUT): Error response:', errorData);
-          
+
           if (res.status === 422 && errorData.message) {
             setError(`Validasi gagal: ${errorData.message}`);
             setLoading(false);
             return;
-          } else if (res.status === 401) {
-            throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
           } else {
             errorMessage = errorData.message || errorMessage;
           }
         } catch (jsonError) {
           console.log('Tidak dapat mem-parse error response sebagai JSON');
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -210,14 +246,14 @@ export default function ProfileAdmin() {
 
       if (responseData.status === 'success') {
         setSuccessMessage(responseData.message || 'Profil admin berhasil diperbarui!');
-        
+
         if (responseData.data) {
           setForm(prev => ({
             ...prev,
             nama: responseData.data!.nama,
             email: responseData.data!.email,
             noHp: responseData.data!.no_hp || '',
-            password: '', 
+            password: '',
             passwordBaru: '',
           }));
         } else {
@@ -239,13 +275,29 @@ export default function ProfileAdmin() {
     }
   };
 
-  if (loading && !form.nama && !error) { 
+  // Tampilkan loading spinner jika token sedang diambil atau data sedang dimuat
+  if (authToken === undefined || (loading && !form.nama && !error && authToken)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-600">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-2"></div>
           Memuat data profil...
         </div>
+      </div>
+    );
+  }
+
+  // Tampilkan pesan error jika token tidak ada setelah mencoba mengambilnya
+  if (!authToken) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8 flex flex-col items-center justify-center text-red-600">
+        <p className="text-lg font-semibold mb-4">Anda belum login atau sesi telah berakhir.</p>
+        <button
+          onClick={() => router.push('/login')}
+          className="bg-[#6A1B1A] hover:bg-[#8B2C2B] text-white text-md px-6 py-3 rounded-lg transition-colors duration-200 shadow-md"
+        >
+          Login Sekarang
+        </button>
       </div>
     );
   }
@@ -351,14 +403,9 @@ export default function ProfileAdmin() {
           </button>
         </div>
       </form>
-      
+
       <div className="mt-8 p-4 bg-gray-100 rounded text-sm">
-        
-        <div className="mt-4 space-x-2">
-          
-          
-          
-        </div>
+        {/* Placeholder for future debug/info */}
       </div>
     </div>
   );

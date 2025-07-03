@@ -1,20 +1,22 @@
 import { X, UserPlus, Upload, FileText } from 'lucide-react';
 
+// Definisi tipe untuk form penambahan user/resto
 type AddForm = {
   nama: string;
   email: string;
   no_hp: string;
-  alamat: string; // Pastikan ini ada dan tipe datanya string
+  // ALAMAT DIGANTI DENGAN LOKASI
+  lokasi: string; // NAMA FIELD DIGANTI DARI 'alamat' MENJADI 'lokasi'
   deskripsi: string;
-  nib: string;
+  NIB: string;
   nama_resto: string;
-  lokasi: string;
-  status: string; // Pastikan ini string
+  status: string;
   kontak: string;
   surat: File | null;
   kata_sandi: string;
 };
 
+// Interface untuk props komponen AddRestaurantModal
 interface AddRestaurantModalProps {
   isOpen: boolean;
   addForm: AddForm;
@@ -24,6 +26,7 @@ interface AddRestaurantModalProps {
   onFormChange: (form: AddForm) => void;
 }
 
+// Komponen AddRestaurantModal
 export default function AddRestaurantModal({
   isOpen,
   addForm,
@@ -35,7 +38,7 @@ export default function AddRestaurantModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0  bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -51,6 +54,7 @@ export default function AddRestaurantModal({
 
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Input Nama */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nama
@@ -64,6 +68,7 @@ export default function AddRestaurantModal({
               />
             </div>
 
+            {/* Input Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -77,6 +82,7 @@ export default function AddRestaurantModal({
               />
             </div>
 
+            {/* Input No HP */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 No HP
@@ -90,6 +96,7 @@ export default function AddRestaurantModal({
               />
             </div>
 
+            {/* Input Kata Sandi */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Kata Sandi
@@ -103,6 +110,7 @@ export default function AddRestaurantModal({
               />
             </div>
 
+            {/* Input Nama Resto */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nama Resto
@@ -116,24 +124,26 @@ export default function AddRestaurantModal({
               />
             </div>
 
+            {/* Input NIB (menggantikan Lokasi) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Lokasi
+                NIB
               </label>
               <input
                 type="text"
-                value={addForm.lokasi}
-                onChange={(e) => onFormChange({...addForm, lokasi: e.target.value})}
+                value={addForm.NIB}
+                onChange={(e) => onFormChange({...addForm, NIB: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Masukkan lokasi"
+                placeholder="Masukkan NIB"
               />
             </div>
 
+            {/* Input Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status
               </label>
-              <select // Menggunakan select untuk status "buka" atau "tutup"
+              <select
                 value={addForm.status}
                 onChange={(e) => onFormChange({...addForm, status: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -144,6 +154,7 @@ export default function AddRestaurantModal({
               </select>
             </div>
 
+            {/* Input Kontak */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Kontak
@@ -158,19 +169,21 @@ export default function AddRestaurantModal({
             </div>
           </div>
 
+          {/* Input LOKASI (SEKARANG UNTUK ALAMAT) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alamat
+              Lokasi
             </label>
             <textarea
-              value={addForm.alamat} // <-- TAMBAHKAN INI
-              onChange={(e) => onFormChange({...addForm, alamat: e.target.value})} // <-- TAMBAHKAN INI
+              value={addForm.lokasi} // Menggunakan field 'lokasi'
+              onChange={(e) => onFormChange({...addForm, lokasi: e.target.value})} // Mengupdate field 'lokasi'
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              placeholder="Masukkan alamat"
+              placeholder="Masukkan lokasi (alamat)"
             />
           </div>
 
+          {/* Input Deskripsi */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Deskripsi
@@ -185,19 +198,7 @@ export default function AddRestaurantModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                NIB
-              </label>
-              <input
-                type="text"
-                value={addForm.nib}
-                onChange={(e) => onFormChange({...addForm, nib: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Masukkan NIB"
-              />
-            </div>
-
+            {/* Input Surat (File Upload) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Surat

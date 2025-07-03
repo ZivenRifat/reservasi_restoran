@@ -72,7 +72,7 @@ export function NewRestaurant({ token, onTotalChange = () => {}, onAuthError = (
     };
 
     fetchRestaurants();
-  }, []);
+  }, [token, onAuthError, onTotalChange, limit]); // Ditambahkan token, onAuthError, onTotalChange, limit ke dependency array
 
   const handleDetailClick = (restaurant: Restaurant) => {
     setSelectedRestaurant(restaurant);
