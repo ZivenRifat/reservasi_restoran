@@ -52,7 +52,7 @@ interface EditForm {
 }
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/admin';
-const AUTH_TOKEN = 'YCXYVZHkCUCc9xNZsOU19q5FqxfQ8oKA3bHLhAoR1e10ab98'; // Ganti dengan token Anda yang sebenarnya
+const AUTH_TOKEN = 'NjkeK0CD3D1kJTa7j3DzKMWwXqH6qBffQxgNeo2q1f48bb9e'; // Ganti dengan token Anda yang sebenarnya
 
 export default function UserManagementPage() {
   const [activeTab, setActiveTab] = useState<'pelanggan' | 'pemilik'>('pelanggan');

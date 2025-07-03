@@ -15,7 +15,7 @@ const Hero = () => {
 
   return (
     <section
-      className="relative bg-cover bg-center h-[658px] flex flex-col items-start justify-center text-white"
+      className="relative bg-cover bg-center h-[703px] flex flex-col items-start justify-center text-white"
       style={{ backgroundImage: "url('/images/SearchbarPic.jpg')" }}
     >
       <div className="absolute inset-0 bg-black/70 z-10"></div>

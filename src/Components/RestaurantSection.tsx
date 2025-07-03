@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link"; // import Link
+import Link from "next/link";
 import SectionTitle from "./SectionTitle";
 import RestaurantCard from "./RestaurantCard";
+import { API_URL } from "@/constant";
 
 interface Foto {
   id: string;
@@ -30,6 +31,8 @@ const sections = [
   { title: "Restoran Baru", key: "newest" },
 ];
 
+const ITEMS_PER_PAGE = 6;
+
 const RestaurantSection: React.FC = () => {
   const [data, setData] = useState<LandingResponse>({
     recommended: [],
@@ -37,14 +40,18 @@ const RestaurantSection: React.FC = () => {
     nearest: [],
   });
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [currentIndexes, setCurrentIndexes] = useState<Record<string, number>>({
+    recommended: 0,
+    newest: 0,
+    nearest: 0,
+  });
 
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/landing");
+        const res = await fetch(`${API_URL}/api/landing`);
         const json = await res.json();
-
         setData({
           recommended: json.data?.recommended ?? [],
           newest: json.data?.newest ?? [],
@@ -60,31 +67,54 @@ const RestaurantSection: React.FC = () => {
     fetchRestaurants();
   }, []);
 
+  const handleNext = (key: string, maxPage: number) => {
+    setCurrentIndexes((prev) => ({
+      ...prev,
+      [key]: Math.min(prev[key] + 1, maxPage),
+    }));
+  };
+
   return (
-    <div className="px-15 py-8 space-y-12">
-      {sections.map((section, idx) => {
+    <div className="px-4 sm:px-8 md:px-16 py-10 space-y-12">
+      {sections.map((section) => {
         const restaurants = data[section.key as keyof LandingResponse] ?? [];
+        const pageIndex = currentIndexes[section.key];
+        const maxPage = Math.ceil(restaurants.length / ITEMS_PER_PAGE) - 1;
+
+        const visibleRestaurants = restaurants.slice(
+          pageIndex * ITEMS_PER_PAGE,
+          pageIndex * ITEMS_PER_PAGE + ITEMS_PER_PAGE
+        );
 
         return (
-          <div key={idx}>
+          <div key={section.key}>
             <div className="flex items-center justify-between mb-4">
               <SectionTitle title={section.title} />
+              {pageIndex < maxPage && (
+                <button
+                  onClick={() => handleNext(section.key, maxPage)}
+                  className="px-3 py-1 rounded-full bg-white text-black shadow hover:bg-gray-100"
+                >
+                  →
+                </button>
+              )}
             </div>
 
             {loading ? (
               <p>Loading...</p>
-            ) : restaurants.length === 0 ? (
+            ) : visibleRestaurants.length === 0 ? (
               <p>Tidak ada restoran untuk kategori ini.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
-                {restaurants.map((resto) => (
-                    <RestaurantCard
-                      href={`/restoran/${resto.id}`}
-                      title={resto.nama}
-                      description={resto.deskripsi}
-                      imageUrl={resto.foto_utama?.url || ""}
-                      variant="default" // atau "recommendation"
-                    />
+                {visibleRestaurants.map((resto) => (
+                  <RestaurantCard
+                    key={resto.id}
+                    href={`/pelanggan/restoran/${resto.id}`}
+                    title={resto.nama}
+                    description={resto.deskripsi}
+                    imageUrl={resto.foto_utama?.url || ""}
+                    variant="default"
+                  />
                 ))}
               </div>
             )}

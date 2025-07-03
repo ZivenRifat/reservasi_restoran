@@ -3,7 +3,7 @@
 import { DashboardData, ApiResponse, Reservasi } from '../types/index'; // Path disesuaikan
 
 // Define constants for token and base URL
-const API_TOKEN = 'EyfWR0eDzhrZqsLpStzGnAIU8xVredhq8QxHNbFxe580f208';
+const API_TOKEN = 'Gpotbiq8ZYrT1GcQ4hNvuOCDFuifAS2BBnout6so7463063e';
 const BASE_API_URL = 'http://127.0.0.1:8000';
 
 export class RestaurantAPI {
