@@ -1,5 +1,6 @@
-// components/menu/MenuItemForm.tsx
 import React from 'react';
+import { ChangeEvent } from 'react'; // Make sure this is imported if not already
+
 
 interface MenuItem {
   id?: string;
@@ -10,13 +11,15 @@ interface MenuItem {
   foto: File | string;
 }
 
+
 interface MenuItemFormProps {
-  formData: MenuItem;
-  onInputChange: (field: keyof MenuItem, value: any) => void;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  formData: MenuItem; // Ensure MenuItem is imported or defined
+  onInputChange: (field: keyof MenuItem, value: string) => void;
+  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
   previewImage: string | null;
   isLoading: boolean;
   isEdit: boolean;
+  disabled?: boolean; // <-- Add this line
 }
 
 export const MenuItemForm: React.FC<MenuItemFormProps> = ({

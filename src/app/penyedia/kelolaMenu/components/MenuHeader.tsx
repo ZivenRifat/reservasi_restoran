@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 interface MenuHeaderProps {
   onAddMenu: () => void;
   isLoading: boolean;
+  disabled?: boolean; // <-- Add this line
 }
 
 export const MenuHeader: React.FC<MenuHeaderProps> = ({ onAddMenu, isLoading }) => {

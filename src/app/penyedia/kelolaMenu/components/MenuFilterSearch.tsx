@@ -1,13 +1,15 @@
 import React from 'react';
 import { Search, Filter } from 'lucide-react';
 
+import { Dispatch, SetStateAction } from 'react'; // Make sure this is imported if not already
+
 interface MenuFilterSearchProps {
   searchTerm: string;
-  onSearchChange: (term: string) => void;
+  onSearchChange: Dispatch<SetStateAction<string>>;
   statusFilter: string;
-  onStatusFilterChange: (status: string) => void;
+  onStatusFilterChange: Dispatch<SetStateAction<string>>;
+  disabled?: boolean; // <-- Add this line
 }
-
 export const MenuFilterSearch: React.FC<MenuFilterSearchProps> = ({
   searchTerm,
   onSearchChange,

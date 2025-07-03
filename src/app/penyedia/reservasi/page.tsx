@@ -1,59 +1,106 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+<<<<<<< HEAD
 import { Pencil, Trash2, X, Search, Filter } from 'lucide-react'; // Import icons
 
 // --- Constants ---
 const API_BASE_URL = 'http://127.0.0.1:8000/api/penyedia';
 const AUTH_TOKEN = '5l1oDsKiycT1XIAfZHl95AefT9jRUAyyLLgn7cDP0a7ef34d';
+=======
+import { Pencil, Trash2, X, Search, Filter, AlertCircle, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { getCookie, deleteCookie } from 'cookies-next';
+>>>>>>> origin/main
 
 // --- Types ---
 interface ReservasiItem {
   id: string;
-  nama_pemesan: string; // Sesuai JSON
-  tanggal: string; // Misal: "Friday, 20 June 2025"
-  waktu: string; // Misal: "20:00:00"
-  nomor_kursi: number; // Sesuai JSON
-  status: 'Menunggu' | 'Dikonfirmasi' | 'Dibatalkan' | 'Selesai'; // Menyesuaikan dengan 'Menunggu' dan menambahkan kemungkinan lain
-  // Jika ada field lain seperti noHp, email, namaRestoran di API detail, tambahkan di sini:
-  // noHp?: string;
-  // email?: string;
-  // namaRestoran?: string;
+  nama_pemesan: string;
+  tanggal: string; // Keep as string, will format for display
+  waktu: string;
+  nomor_kursi: number;
+  status: 'Menunggu' | 'Dikonfirmasi' | 'Dibatalkan' | 'Selesai';
 }
 
 interface DetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: ReservasiItem | null;
-  onUpdateStatus: (id: string, newStatus: ReservasiItem['status']) => void; // Mengirim status baru
+  onUpdateStatus: (id: string, newStatus: ReservasiItem['status']) => void;
+  showNotification: (message: string, type?: 'success' | 'error') => void;
+  isParentLoading: boolean;
+  authToken: string | undefined;
 }
 
-// --- DetailModal Component (re-named from Modal for clarity) ---
-const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpdateStatus }) => {
+interface NotificationState {
+  show: boolean;
+  message: string;
+  type: 'success' | 'error' | '';
+}
+
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Jakarta'
+    };
+    return date.toLocaleDateString('id-ID', options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return dateString;
+  }
+};
+
+// --- DetailModal Component ---
+const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpdateStatus, showNotification, isParentLoading, authToken }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
   useEffect(() => {
-    // Reset state when modal opens or item changes
     if (isOpen) {
       setError(null);
     }
   }, [isOpen, item]);
 
+  const isAnyLoading = isLoading || isParentLoading;
+
+  const handleAuthenticationError = useCallback(() => {
+    showNotification('Sesi Anda telah berakhir. Mohon login ulang.', 'error');
+    deleteCookie('auth_token');
+    // Karena modal tidak punya akses router secara langsung, biarkan parent yang redirect
+    // (Parent sudah memiliki logic redirect setelah showNotification)
+  }, [showNotification]);
+
+
   const handleKonfirmasi = async () => {
-    if (!item || item.status === 'Dikonfirmasi') return; // Prevent double confirmation
+    if (!item || item.status === 'Dikonfirmasi') return;
+    if (!authToken) {
+      handleAuthenticationError();
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
     try {
-      // Perhatikan URL dan method: PUT ke endpoint konfirmasi
-      const response = await fetch(`${API_BASE_URL}/reservasi/konfirmasi/${item.id}`, {
+      // PERBAIKAN: Tambahkan /api/penyedia/reservasi/
+      const response = await fetch(`${API_BASE_URL}/api/penyedia/reservasi/konfirmasi/${item.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
         },
       });
+
+      if (response.status === 401) {
+        handleAuthenticationError();
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -62,19 +109,24 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
 
       const result = await response.json();
       console.log('Konfirmasi successful:', result);
-      // Panggil onUpdateStatus dengan status baru
-      onUpdateStatus(item.id, 'Dikonfirmasi'); // Asumsi status berubah jadi 'Dikonfirmasi'
-      onClose(); // Tutup modal setelah berhasil
+      showNotification('Reservasi berhasil dikonfirmasi!', 'success');
+      onUpdateStatus(item.id, 'Dikonfirmasi');
+      onClose();
     } catch (err: any) {
       console.error('Error confirming reservation:', err);
       setError(`Gagal mengkonfirmasi reservasi: ${err.message}`);
+      showNotification(`Gagal mengkonfirmasi: ${err.message}`, 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleBatalkan = async () => {
-    if (!item || item.status === 'Dibatalkan') return; // Prevent double cancellation
+    if (!item || item.status === 'Dibatalkan') return;
+    if (!authToken) {
+      handleAuthenticationError();
+      return;
+    }
 
     if (!window.confirm('Apakah Anda yakin ingin membatalkan reservasi ini?')) {
       return;
@@ -83,14 +135,20 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
     setIsLoading(true);
     setError(null);
     try {
-      // Perhatikan URL dan method: DELETE ke endpoint batalkan
-      const response = await fetch(`${API_BASE_URL}/reservasi/batalkan/${item.id}`, {
-        method: 'DELETE', // DELETE method
+      // PERBAIKAN: Tambahkan /api/penyedia/reservasi/
+      const response = await fetch(`${API_BASE_URL}/api/penyedia/reservasi/batalkan/${item.id}`, {
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
-          'Accept': 'application/json', // Minta JSON response
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
         },
       });
+
+      if (response.status === 401) {
+        handleAuthenticationError();
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -98,12 +156,13 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
       }
 
       console.log('Pembatalan successful');
-      // Panggil onUpdateStatus dengan status baru
-      onUpdateStatus(item.id, 'Dibatalkan'); // Asumsi status berubah jadi 'Dibatalkan'
-      onClose(); // Tutup modal setelah berhasil dibatalkan
+      showNotification('Reservasi berhasil dibatalkan!', 'success');
+      onUpdateStatus(item.id, 'Dibatalkan');
+      onClose();
     } catch (err: any) {
       console.error('Error canceling reservation:', err);
       setError(`Gagal membatalkan reservasi: ${err.message}`);
+      showNotification(`Gagal membatalkan: ${err.message}`, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -111,12 +170,13 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
 
   const handleCetak = () => {
     window.print();
+    showNotification('Mencetak nota...', 'success');
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+    <div className="fixed inset-0  bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md mx-4 text-center">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Detail Reservasi</h2>
@@ -125,19 +185,19 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
           </button>
         </div>
 
-        {isLoading && <p className="text-blue-600 mb-4">Memproses...</p>}
+        {isAnyLoading && <p className="text-blue-600 mb-4">Memproses...</p>}
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        {!authToken && (
+            <p className="text-red-500 mb-4">Token autentikasi tidak ditemukan. Harap login kembali.</p>
+        )}
 
         {item ? (
           <>
             <div className="text-left space-y-2 mb-6">
               <p><strong>Nama Pemesan:</strong> {item.nama_pemesan}</p>
-              {/* Jika noHp, email, namaRestoran ada di JSON detail, uncomment ini */}
-              {/* {item.noHp && <p><strong>No HP:</strong> {item.noHp}</p>} */}
-              {/* {item.email && <p><strong>Email:</strong> {item.email}</p>} */}
-              {/* {item.namaRestoran && <p><strong>Nama Restoran:</strong> {item.namaRestoran}</p>} */}
-              <p><strong>Tanggal:</strong> {item.tanggal}</p>
-              <p><strong>Waktu:</strong> {item.waktu}</p>
+              <p><strong>Tanggal:</strong> {formatDate(item.tanggal)}</p>
+              <p><strong>Waktu:</strong> {item.waktu.substring(0, 5)}</p>
               <p><strong>Nomor Kursi:</strong> {item.nomor_kursi}</p>
               <p><strong>Status:</strong> <span className={`font-semibold ${
                 item.status === 'Dikonfirmasi' ? 'text-green-600' :
@@ -146,21 +206,20 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
               }`}>{item.status}</span></p>
             </div>
 
-            {/* Aksi berdasarkan status */}
             <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
               {item.status === 'Menunggu' && (
                 <>
                   <button
                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleKonfirmasi}
-                    disabled={isLoading}
+                    disabled={isAnyLoading || !authToken}
                   >
                     Konfirmasi
                   </button>
                   <button
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleBatalkan}
-                    disabled={isLoading}
+                    disabled={isAnyLoading || !authToken}
                   >
                     Batalkan
                   </button>
@@ -170,15 +229,16 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
               {item.status === 'Dikonfirmasi' && (
                 <>
                   <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleCetak}
+                    disabled={isAnyLoading}
                   >
                     Cetak Nota
                   </button>
                   <button
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleBatalkan} // Masih bisa dibatalkan jika sudah dikonfirmasi
-                    disabled={isLoading}
+                    onClick={handleBatalkan}
+                    disabled={isAnyLoading || !authToken}
                   >
                     Batalkan
                   </button>
@@ -191,11 +251,10 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
                 </p>
               )}
 
-              {/* Tombol Tutup selalu ada */}
               <button
                 className="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onClose}
-                disabled={isLoading}
+                disabled={isAnyLoading}
               >
                 Tutup
               </button>
@@ -209,7 +268,8 @@ const DetailModal: React.FC<DetailModalProps> = ({ isOpen, onClose, item, onUpda
   );
 };
 
-// --- ReservasiPage Component ---
+
+// --- KelolaReservasiPage Component ---
 const KelolaReservasiPage: React.FC = () => {
   const [reservations, setReservations] = useState<ReservasiItem[]>([]);
   const [filteredReservations, setFilteredReservations] = useState<ReservasiItem[]>([]);
@@ -219,16 +279,74 @@ const KelolaReservasiPage: React.FC = () => {
   const [errorList, setErrorList] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Semua');
+  const [notification, setNotification] = useState<NotificationState>({ show: false, message: '', type: '' });
 
+  const router = useRouter();
+
+  const API_BASE_URL_ENV = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+
+  const [authToken, setAuthToken] = useState<string | undefined>(undefined);
+
+
+  // --- Fungsi showNotification dideklarasikan lebih awal ---
+  const showNotification = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => setNotification({ show: false, message: '', type: '' }), 3000);
+  }, []);
+
+
+  // --- Helper untuk mengambil token dari cookie ---
+  const retrieveAuthToken = useCallback(async () => {
+    const token = await getCookie('auth_token');
+    if (typeof token === 'string') {
+      setAuthToken(token);
+    } else {
+      setAuthToken(undefined);
+      showNotification('Sesi berakhir, mohon login ulang.', 'error');
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
+    }
+  }, [showNotification, router]);
+
+
+  // --- Effect untuk mengambil token saat komponen mount ---
+  useEffect(() => {
+    retrieveAuthToken();
+  }, [retrieveAuthToken]);
+
+
+  // --- Fungsi Fetch Reservasi ---
   const fetchReservations = useCallback(async () => {
+    if (authToken === undefined) {
+      setIsLoadingList(true);
+      return;
+    }
+    if (!authToken) {
+      setErrorList('Autentikasi diperlukan. Mohon login.');
+      setIsLoadingList(false);
+      setReservations([]);
+      setFilteredReservations([]);
+      return;
+    }
+
     setIsLoadingList(true);
     setErrorList(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/reservasi`, {
+      // PERBAIKAN: Tambahkan /api/penyedia/reservasi
+      const response = await fetch(`${API_BASE_URL_ENV}/api/penyedia/reservasi`, {
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
+          'Accept': 'application/json',
         },
       });
+
+      if (response.status === 401) {
+        showNotification('Sesi berakhir, mohon login ulang.', 'error');
+        deleteCookie('auth_token');
+        setTimeout(() => router.push('/login'), 1500);
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -236,21 +354,37 @@ const KelolaReservasiPage: React.FC = () => {
       }
 
       const data = await response.json();
-      setReservations(data.data || []); // Pastikan membaca dari data.data
+      if (Array.isArray(data.data)) {
+        setReservations(data.data);
+      } else if (Array.isArray(data)) {
+        setReservations(data);
+      } else {
+        console.warn('Unexpected API response structure:', data);
+        setReservations([]);
+        setErrorList('Struktur data dari API tidak sesuai.');
+      }
     } catch (err: any) {
       console.error('Error fetching reservations:', err);
-      setErrorList(`Gagal memuat daftar reservasi: ${err.message}`);
+      let errorMessage = 'Gagal memuat daftar reservasi.';
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        errorMessage += ' Pastikan server backend berjalan dan CORS dikonfigurasi dengan benar.';
+      } else if (err.message) {
+        errorMessage += `: ${err.message}`;
+      }
+      setErrorList(errorMessage);
       setReservations([]);
+      showNotification(errorMessage, 'error');
     } finally {
       setIsLoadingList(false);
     }
-  }, []); // Dependensi kosong karena tidak ada variabel eksternal yang dibutuhkan
+  }, [API_BASE_URL_ENV, authToken, showNotification, router]);
 
   useEffect(() => {
-    fetchReservations();
-  }, [fetchReservations]);
+    if (authToken !== undefined) {
+      fetchReservations();
+    }
+  }, [fetchReservations, authToken]);
 
-  // Effect untuk filtering data setiap kali data reservasi, search term, atau filter status berubah
   useEffect(() => {
     let currentFiltered = reservations;
 
@@ -268,11 +402,13 @@ const KelolaReservasiPage: React.FC = () => {
   }, [reservations, searchTerm, statusFilter]);
 
 
-  const handleDetailClick = async (item: ReservasiItem) => {    
+  const handleDetailClick = async (item: ReservasiItem) => {
+    if (!authToken) {
+      showNotification('Autentikasi diperlukan untuk melihat detail reservasi. Mohon login.', 'error');
+      return;
+    }
     setSelectedReservasi(item);
     setShowDetailModal(true);
-
-    
   };
 
   const handleCloseModal = () => {
@@ -280,22 +416,30 @@ const KelolaReservasiPage: React.FC = () => {
     setSelectedReservasi(null);
   };
 
-  // Fungsi ini dipanggil dari Modal ketika status reservasi diperbarui (konfirmasi/batalkan)
   const handleReservationStatusUpdate = (id: string, newStatus: ReservasiItem['status']) => {
-    // Update status di daftar `reservations` secara lokal
     setReservations(prevReservations =>
       prevReservations.map(res =>
         res.id === id ? { ...res, status: newStatus } : res
       )
     );
-    // Tutup modal setelah update jika tidak otomatis tertutup di modal
     setShowDetailModal(false);
-    setSelectedReservasi(null); // Clear selected item
-    // fetchReservations(); // Opsi: re-fetch semua data untuk memastikan konsistensi
+    setSelectedReservasi(null);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      {/* Notifikasi */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+          notification.type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`}>
+          <div className="flex items-center gap-2">
+            {notification.type === 'error' ? <AlertCircle size={20} /> : <Check size={20} />}
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -303,11 +447,49 @@ const KelolaReservasiPage: React.FC = () => {
           <p className="text-gray-600 mt-1">Pantau dan kelola semua reservasi yang masuk.</p>
         </div>
 
-        
+        {/* Filter and Search Bar */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Cari nama pemesan..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                disabled={isLoadingList || !authToken}
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-2">
+              <Filter size={20} className="text-gray-400" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                disabled={isLoadingList || !authToken}
+              >
+                <option value="Semua">Semua Status</option>
+                <option value="Menunggu">Menunggu</option>
+                <option value="Dikonfirmasi">Dikonfirmasi</option>
+                <option value="Dibatalkan">Dibatalkan</option>
+                <option value="Selesai">Selesai</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Tabel Reservasi */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          {isLoadingList ? (
+          {authToken === undefined ? (
+            <div className="p-8 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+              <p className="mt-2 text-gray-600">Memuat sesi autentikasi...</p>
+            </div>
+          ) : isLoadingList ? (
             <div className="p-8 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
               <p className="mt-2 text-gray-600">Memuat daftar reservasi...</p>
@@ -315,12 +497,21 @@ const KelolaReservasiPage: React.FC = () => {
           ) : errorList ? (
             <div className="p-8 text-center text-red-500">
               <p>{errorList}</p>
-              <button
-                onClick={fetchReservations}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Coba Lagi
-              </button>
+              {errorList.includes('Autentikasi diperlukan') || errorList.includes('Sesi berakhir') ? (
+                <button
+                  onClick={() => router.push('/login')}
+                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Login Sekarang
+                </button>
+              ) : (
+                <button
+                  onClick={fetchReservations}
+                  className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Coba Lagi
+                </button>
+              )}
             </div>
           ) : filteredReservations.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -354,10 +545,10 @@ const KelolaReservasiPage: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900">{res.nama_pemesan}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{res.tanggal}</div>
+                        <div className="text-sm text-gray-900">{formatDate(res.tanggal)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{res.waktu.substring(0, 5)}</div> {/* Hanya ambil HH:MM */}
+                        <div className="text-sm text-gray-900">{res.waktu.substring(0, 5)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{res.nomor_kursi}</div>
@@ -371,7 +562,7 @@ const KelolaReservasiPage: React.FC = () => {
                               ? 'bg-yellow-100 text-yellow-800'
                               : res.status === 'Dibatalkan'
                               ? 'bg-red-100 text-red-800'
-                              : 'bg-gray-100 text-gray-800' // 'Selesai'
+                              : 'bg-gray-100 text-gray-800'
                           }`}
                         >
                           {res.status}
@@ -379,8 +570,9 @@ const KelolaReservasiPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={() => handleDetailClick(res)}
+                          disabled={!authToken}
                         >
                           Detail
                         </button>
@@ -390,8 +582,6 @@ const KelolaReservasiPage: React.FC = () => {
                 </tbody>
               </table>
 
-              {/* Pagination - Anda perlu mengimplementasikan logika pagination nyata jika API Anda mendukungnya */}
-              {/* Ini hanyalah placeholder */}
               <div className="flex justify-end items-center mt-4 space-x-2 text-sm p-4">
                 <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50" disabled>&lt;&lt;</button>
                 <button className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50" disabled>1</button>
@@ -404,12 +594,14 @@ const KelolaReservasiPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
       <DetailModal
         isOpen={showDetailModal}
         onClose={handleCloseModal}
         item={selectedReservasi}
         onUpdateStatus={handleReservationStatusUpdate}
+        showNotification={showNotification}
+        isParentLoading={isLoadingList}
+        authToken={authToken}
       />
     </div>
   );

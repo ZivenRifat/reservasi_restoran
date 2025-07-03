@@ -10,6 +10,8 @@ import EditUserModal from './components/UserEdit';
 
 import { CgSpinner } from 'react-icons/cg';
 import { UserPlus } from 'lucide-react';
+import { getCookie, deleteCookie } from 'cookies-next';
+import { useRouter } from 'next/navigation';
 
 // Interfaces dari komponen yang Anda berikan
 interface User {
@@ -19,31 +21,29 @@ interface User {
   peran: string; // 'pelanggan' atau 'pemilik_restoran' (asumsi: sesuai API Anda)
   no_hp: string;
   created_at: string;
-  // Tambahan properti untuk pemilik restoran jika API GET show penyedia mengembalikan ini,
-  // atau jika Anda ingin menampilkannya di tabel/modal edit.
-  alamat?: string;
+  lokasi?: string; // NAMA FIELD DIGANTI DARI 'alamat' MENJADI 'lokasi'
   deskripsi?: string;
   nib?: string;
-  nama_resto?: string; 
-  lokasi?: string;     
-  status?: string;    
-  kontak?: string;     
+  nama_resto?: string;
+  status?: string;
+  kontak?: string;
 }
 
-interface AddForm {
+// **UPDATED AddForm interface to match AddRestaurantModal.tsx**
+type AddForm = {
   nama: string;
   email: string;
   no_hp: string;
-  alamat: string;
+  // ALAMAT DIGANTI DENGAN LOKASI
+  lokasi: string; // NAMA FIELD DIGANTI DARI 'alamat' MENJADI 'lokasi'
   deskripsi: string;
-  nib: string;
-  nama_resto: string; // Diperbarui dari nama_restoran
-  lokasi: string;
-  status: string; // Akan disesuaikan dengan "buka" atau "tutup"
+  NIB: string;
+  nama_resto: string;
+  status: string;
   kontak: string;
   surat: File | null;
   kata_sandi: string;
-}
+};
 
 interface EditForm {
   nama: string;
@@ -52,34 +52,33 @@ interface EditForm {
 }
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/admin';
-const AUTH_TOKEN = 'NjkeK0CD3D1kJTa7j3DzKMWwXqH6qBffQxgNeo2q1f48bb9e'; // Ganti dengan token Anda yang sebenarnya
 
 export default function UserManagementPage() {
   const [activeTab, setActiveTab] = useState<'pelanggan' | 'pemilik'>('pelanggan');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalUsers, setTotalUsers] = useState<number>(0); // Untuk pagination
+  const [totalUsers, setTotalUsers] = useState<number>(0);
 
-  // State untuk modal tambah pengguna
+  const [authToken, setAuthToken] = useState<string | undefined>(undefined);
+  const router = useRouter();
+
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [addForm, setAddForm] = useState<AddForm>({
     nama: '',
     email: '',
     no_hp: '',
-    alamat: '',
+    lokasi: '', // Menginisialisasi field 'lokasi'
     deskripsi: '',
-    nib: '',
+    NIB: '',
     nama_resto: '',
-    lokasi: '',
-    status: '', // Inisialisasi status
+    status: '',
     kontak: '',
     surat: null,
     kata_sandi: '',
   });
-  const [addingUser, setAddingUser] = useState<boolean>(false); // Loading state untuk proses tambah
+  const [addingUser, setAddingUser] = useState<boolean>(false);
 
-  // State untuk modal edit pengguna
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -87,32 +86,60 @@ export default function UserManagementPage() {
     email: '',
     no_hp: '',
   });
-  const [editingUser, setEditingUser] = useState<boolean>(false); // Loading state untuk proses edit
+  const [editingUser, setEditingUser] = useState<boolean>(false);
 
-  // Fetch users berdasarkan tab aktif
+  useEffect(() => {
+    const retrieveToken = async () => {
+      const storedToken = await getCookie('auth_token');
+      if (typeof storedToken === 'string') {
+        setAuthToken(storedToken);
+      } else {
+        console.log('No authentication token found. Redirecting to login.');
+        setAuthToken(undefined);
+      }
+    };
+    retrieveToken();
+  }, []);
+
+  const handleAuthError = useCallback(() => {
+    setError('Sesi Anda telah berakhir atau tidak valid. Silakan login kembali.');
+    deleteCookie('auth_token');
+    router.push('/login');
+  }, [router]);
+
   const fetchUsers = useCallback(async () => {
+    if (authToken === undefined) {
+      return;
+    }
+    if (!authToken) {
+      setLoading(false);
+      setError('Token otentikasi tidak ditemukan. Silakan login.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       let endpoint = '';
       if (activeTab === 'pelanggan') {
-        // Endpoint GET all customers
         endpoint = `${API_BASE_URL}/customers`;
-      } else { // 'pemilik'
-        // Endpoint GET all users (penyedia)
+      } else {
         endpoint = `${API_BASE_URL}/users`;
       }
+
+      console.log('Fetching users from:', endpoint);
 
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
           'Accept': 'application/json',
         },
       });
 
       if (response.status === 401) {
-        throw new Error('Unauthorized: Sesi telah berakhir. Silakan login kembali.');
+        handleAuthError();
+        return;
       }
 
       if (!response.ok) {
@@ -121,40 +148,37 @@ export default function UserManagementPage() {
       }
 
       const result = await response.json();
-      // Mengakses data array yang sebenarnya (misal: result.data.data jika bersarang, atau result.data jika langsung array)
       let fetchedData: User[] = [];
       let totalFetchedUsers: number = 0;
 
-      // Cek apakah 'result.data' adalah array (seperti untuk penyedia)
       if (Array.isArray(result.data)) {
         fetchedData = result.data;
-        totalFetchedUsers = result.data.length; // Jika tidak ada 'total' dari API, gunakan panjang array
-      }
-      // Atau apakah 'result.data' adalah objek dengan 'data' di dalamnya (seperti untuk restoran/pelanggan ber-pagination)
-      else if (result.data && Array.isArray(result.data.data)) {
+        totalFetchedUsers = result.data.length;
+      } else if (result.data && Array.isArray(result.data.data)) {
         fetchedData = result.data.data;
         totalFetchedUsers = result.data.total || fetchedData.length;
       }
 
       setUsers(fetchedData);
-      setTotalUsers(totalFetchedUsers); // Set total users untuk pagination
+      setTotalUsers(totalFetchedUsers);
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan tidak diketahui saat mengambil data.');
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, authToken, handleAuthError]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (authToken !== undefined) {
+      fetchUsers();
+    }
+  }, [fetchUsers, authToken]);
 
-  // Handler untuk mengubah tab
   const handleTabChange = (tab: 'pelanggan' | 'pemilik') => {
     setActiveTab(tab);
-    setUsers([]); // Reset users saat ganti tab
-    setTotalUsers(0); // Reset total saat ganti tab
+    setUsers([]);
+    setTotalUsers(0);
   };
 
   // --- Handler untuk Menambah Pengguna (Pemilik Restoran) ---
@@ -163,12 +187,11 @@ export default function UserManagementPage() {
       nama: '',
       email: '',
       no_hp: '',
-      alamat: '',
+      lokasi: '', // Menginisialisasi field 'lokasi'
       deskripsi: '',
-      nib: '',
+      NIB: '',
       nama_resto: '',
-      lokasi: '',
-      status: '', // Reset status
+      status: '',
       kontak: '',
       surat: null,
       kata_sandi: '',
@@ -181,22 +204,44 @@ export default function UserManagementPage() {
   };
 
   const handleAddSubmit = async () => {
+    console.log('Starting add submit with form data:', {
+      ...addForm,
+      surat: addForm.surat ? { name: addForm.surat.name, size: addForm.surat.size } : null
+    });
+
+    if (!authToken) {
+      setError('Token otentikasi tidak ditemukan. Silakan login.');
+      return;
+    }
+
     setAddingUser(true);
     setError(null);
 
-    // Validasi sederhana: pastikan semua field yang diperlukan ada
-    if (
-      !addForm.nama ||
-      !addForm.email ||
-      !addForm.no_hp ||
-      !addForm.nama_resto ||
-      !addForm.lokasi ||
-      !addForm.status ||
-      !addForm.kontak ||
-      !addForm.surat ||
-      !addForm.kata_sandi
-    ) {
-      setError('Semua kolom wajib diisi: Nama, Email, No HP, Nama Resto, Lokasi, Status, Kontak, Surat, dan Kata Sandi.');
+    const requiredFields = [
+      { field: addForm.nama, name: 'Nama' },
+      { field: addForm.email, name: 'Email' },
+      { field: addForm.no_hp, name: 'No HP' },
+      { field: addForm.nama_resto, name: 'Nama Resto' },
+      { field: addForm.NIB, name: 'NIB' },
+      { field: addForm.status, name: 'Status' },
+      { field: addForm.kontak, name: 'Kontak' },
+      { field: addForm.kata_sandi, name: 'Kata Sandi' },
+      { field: addForm.surat, name: 'Surat' }
+    ];
+    
+    // TAMBAHKAN LOKASI KE VALIDASI REQUIRED JIKA WAJIB DI BACKEND
+    // Jika lokasi wajib, tambahkan: { field: addForm.lokasi, name: 'Lokasi' },
+
+    const missingFields = requiredFields.filter(({ field }) => !field).map(({ name }) => name);
+
+    if (missingFields.length > 0) {
+      setError(`Field berikut wajib diisi: ${missingFields.join(', ')}`);
+      setAddingUser(false);
+      return;
+    }
+
+    if (addForm.surat && addForm.surat.size > 5 * 1024 * 1024) {
+      setError('Ukuran file surat tidak boleh lebih dari 5MB');
       setAddingUser(false);
       return;
     }
@@ -205,11 +250,10 @@ export default function UserManagementPage() {
     formData.append('nama', addForm.nama);
     formData.append('email', addForm.email);
     formData.append('no_hp', addForm.no_hp);
-    formData.append('alamat', addForm.alamat);
-    formData.append('deskripsi', addForm.deskripsi);
-    formData.append('nib', addForm.nib);
+    formData.append('lokasi', addForm.lokasi || ''); // MENGIRIM addForm.lokasi KE FIELD 'lokasi' DI BACKEND
+    formData.append('deskripsi', addForm.deskripsi || '');
+    formData.append('nib', addForm.NIB); // MENGIRIM NIB KE FIELD 'nib' DI BACKEND
     formData.append('nama_resto', addForm.nama_resto);
-    formData.append('lokasi', addForm.lokasi);
     formData.append('status', addForm.status);
     formData.append('kontak', addForm.kontak);
     formData.append('kata_sandi', addForm.kata_sandi);
@@ -218,30 +262,45 @@ export default function UserManagementPage() {
     }
 
     try {
-      // Endpoint POST tambah user restoran
-      const response = await fetch(`${API_BASE_URL}/users`, {
+      const endpoint = `${API_BASE_URL}/users`;
+      console.log('Sending POST request to:', endpoint);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
           'Accept': 'application/json',
         },
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        // Menangani error dari server yang bisa berisi banyak pesan
-        if (errorData.errors) {
-            const errorMessages = Object.values(errorData.errors).flat().join('. ');
-            throw new Error(errorMessages || `Gagal menambah pemilik restoran: ${response.status}`);
+        if (responseData.errors) {
+          const errorMessages = Object.entries(responseData.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('\n');
+          throw new Error(errorMessages);
         } else {
-            throw new Error(errorData.message || `Gagal menambah pemilik restoran: ${response.status}`);
+          throw new Error(responseData.message || `Gagal menambah pemilik restoran: ${response.status}`);
         }
       }
 
-      // Jika berhasil, tutup modal dan refresh data
+      console.log('User added successfully:', responseData);
       setIsAddModalOpen(false);
-      fetchUsers();
+      await fetchUsers();
+      
+      setError(null);
+      
     } catch (err) {
       console.error('Add user error:', err);
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat menambah pengguna.');
@@ -267,13 +326,17 @@ export default function UserManagementPage() {
 
   const handleEditSubmit = async () => {
     if (!selectedUser) return;
+    if (!authToken) {
+      setError('Token otentikasi tidak ditemukan. Silakan login.');
+      return;
+    }
 
     setEditingUser(true);
     setError(null);
 
     try {
       let endpoint = '';
-      let method = 'PUT'; // Atau PATCH, tergantung API Anda
+      let method = 'PUT';
       let bodyData: any = {
         nama: editForm.nama,
         email: editForm.email,
@@ -281,44 +344,40 @@ export default function UserManagementPage() {
       };
 
       if (activeTab === 'pelanggan') {
-        // Endpoint PUT update customer
         endpoint = `${API_BASE_URL}/customers/${selectedUser.id}`;
       } else { // 'pemilik'
-        // Endpoint PUT update penyedia
         endpoint = `${API_BASE_URL}/users/${selectedUser.id}`;
-        // Jika ada properti tambahan untuk pemilik, tambahkan di sini untuk update
-        // bodyData.alamat = selectedUser.alamat;
-        // bodyData.deskripsi = selectedUser.deskripsi;
-        // bodyData.nib = selectedUser.nib;
-        // bodyData.nama_resto = selectedUser.nama_resto;
-        // bodyData.lokasi = selectedUser.lokasi;
-        // bodyData.status = selectedUser.status;
-        // bodyData.kontak = selectedUser.kontak;
+        // Jika ada field lokasi di User untuk edit, Anda juga perlu menambahkannya di sini
+        // bodyData.lokasi = selectedUser.lokasi; // Contoh
       }
 
       const response = await fetch(endpoint, {
         method: method,
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify(bodyData),
       });
 
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
-        // Menangani error dari server yang bisa berisi banyak pesan
         if (errorData.errors) {
-            const errorMessages = Object.values(errorData.errors).flat().join('. ');
-            throw new Error(errorMessages || `Gagal mengedit ${activeTab}: ${response.status}`);
+          const errorMessages = Object.values(errorData.errors).flat().join('. ');
+          throw new Error(errorMessages || `Gagal mengedit ${activeTab}: ${response.status}`);
         } else {
-            throw new Error(errorData.message || `Gagal mengedit ${activeTab}: ${response.status}`);
+          throw new Error(errorData.message || `Gagal mengedit ${activeTab}: ${response.status}`);
         }
       }
 
       setIsEditModalOpen(false);
-      fetchUsers(); // Refresh data setelah edit
+      fetchUsers();
     } catch (err) {
       console.error('Edit user error:', err);
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat mengedit pengguna.');
@@ -332,34 +391,40 @@ export default function UserManagementPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus ${user.nama}?`)) {
       return;
     }
+    if (!authToken) {
+      setError('Token otentikasi tidak ditemukan. Silakan login.');
+      return;
+    }
 
-    setLoading(true); // Atau gunakan state loading terpisah untuk delete
+    setLoading(true);
     setError(null);
 
     try {
       let endpoint = '';
       if (activeTab === 'pelanggan') {
-        // Endpoint DELETE customer
         endpoint = `${API_BASE_URL}/customers/${user.id}`;
       } else { // 'pemilik'
-        // Endpoint DELETE penyedia
         endpoint = `${API_BASE_URL}/users/${user.id}`;
       }
 
       const response = await fetch(endpoint, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${AUTH_TOKEN}`,
+          'Authorization': `Bearer ${authToken}`,
           'Accept': 'application/json',
         },
       });
+
+      if (response.status === 401) {
+        handleAuthError();
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Gagal menghapus ${activeTab}: ${response.status}`);
       }
 
-      // Jika berhasil, refresh data
       fetchUsers();
     } catch (err) {
       console.error('Delete user error:', err);
@@ -369,30 +434,30 @@ export default function UserManagementPage() {
     }
   };
 
-  // --- Placeholder untuk Delete Foto Tambahan (Jika diperlukan di masa mendatang) ---
-  // Endpoint: DELETE FOTO tambahan {{url}}/api/admin/users/foto-tambahan/5cbbb5d6-53ae-4cfe-b637-cdd8d95e96c5
-  // Jika Anda ingin mengimplementasikan fungsi ini di masa mendatang,
-  // Anda bisa menambahkannya ke UserTable atau di tempat yang relevan.
-  // const handleDeleteFotoTambahan = async (fotoId: string) => {
-  //   try {
-  //     const response = await fetch(`${API_BASE_URL}/users/foto-tambahan/${fotoId}`, {
-  //       method: 'DELETE',
-  //       headers: {
-  //         'Authorization': `Bearer ${AUTH_TOKEN}`,
-  //         'Accept': 'application/json',
-  //       },
-  //     });
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || `Gagal menghapus foto tambahan: ${response.status}`);
-  //     }
-  //     console.log(`Foto tambahan dengan ID ${fotoId} berhasil dihapus.`);
-  //     // Mungkin perlu refresh data atau update UI lokal
-  //   } catch (err) {
-  //     console.error('Error deleting additional photo:', err);
-  //     setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat menghapus foto tambahan.');
-  //   }
-  // };
+  if (authToken === undefined) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8 flex items-center justify-center">
+        <div className="inline-flex items-center space-x-2 text-gray-500">
+          <CgSpinner className="animate-spin h-8 w-8 text-blue-500" />
+          <span>Memuat sesi pengguna...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authToken) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8 flex flex-col items-center justify-center text-red-600">
+        <p className="text-lg font-semibold mb-4">Anda belum login atau sesi telah berakhir.</p>
+        <button
+          onClick={() => router.push('/login')}
+          className="bg-[#6A1B1A] hover:bg-[#8B2C2B] text-white text-md px-6 py-3 rounded-lg transition-colors duration-200 shadow-md"
+        >
+          Login Sekarang
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -401,7 +466,7 @@ export default function UserManagementPage() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong className="font-bold">Error!</strong>
-            <span className="block sm:inline ml-2">{error}</span>
+            <span className="block sm:inline ml-2 whitespace-pre-line">{error}</span>
             <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
               <svg onClick={() => setError(null)} className="fill-current h-6 w-6 text-red-500 cursor-pointer" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.414l-2.651 2.651a1.2 1.2 0 1 1-1.697-1.697L8.586 10 5.935 7.349a1.2 1.2 0 1 1 1.697-1.697L10 8.586l2.651-2.651a1.2 1.2 0 1 1 1.697 1.697L11.414 10l2.651 2.651a1.2 1.2 0 0 1 0 1.698z"/></svg>
             </span>
@@ -415,7 +480,7 @@ export default function UserManagementPage() {
             <h2 className="text-xl font-semibold text-gray-800">
               {activeTab === 'pelanggan' ? 'Data Pelanggan' : 'Data Pemilik Restoran'}
             </h2>
-            {activeTab === 'pemilik' && ( // Tombol tambah hanya untuk pemilik restoran
+            {activeTab === 'pemilik' && (
               <button
                 onClick={handleOpenAddModal}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 transition-colors shadow-sm"

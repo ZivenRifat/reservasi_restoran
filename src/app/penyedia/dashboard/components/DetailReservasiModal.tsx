@@ -1,16 +1,30 @@
-// src/app/Restoran/dashboard/components/DetailReservasiModal.tsx
-
 import React from 'react';
+<<<<<<< HEAD
 import { X, Check, Printer } from 'lucide-react';
 import { Reservasi } from '../../../../Components/types'; // Path disesuaikan
+=======
+import { X, Printer, Check } from 'lucide-react';
+
+export interface Reservasi {
+  id?: string;
+  nama: string;
+  jumlah_orang: number;
+  waktu: string;
+  nomor_meja: number;
+  status?: 'pending' | 'confirmed' | 'cancelled';
+  tanggal?: string;
+  no_telepon?: string;
+  catatan?: string;
+}
+>>>>>>> origin/main
 
 interface DetailReservasiModalProps {
   reservasi: Reservasi | null;
   isOpen: boolean;
   onClose: () => void;
-  onKonfirmasi: (id: string) => void;
-  onBatalkan: (id: string) => void;
-  showCetakNota?: boolean;
+  onKonfirmasi: (id: string) => Promise<void>;
+  onBatalkan: (id: string) => Promise<void>;
+  showCetakNota: boolean;
 }
 
 const DetailReservasiModal: React.FC<DetailReservasiModalProps> = ({
@@ -25,6 +39,15 @@ const DetailReservasiModal: React.FC<DetailReservasiModalProps> = ({
 
   const handleCetakNota = () => {
     window.print();
+  };
+
+  const getStatusClass = (status?: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -60,7 +83,7 @@ const DetailReservasiModal: React.FC<DetailReservasiModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-gray-600">Tanggal</label>
-              <p className="font-medium">{reservasi.tanggal || 'Hari ini'}</p>
+              <p className="font-medium">{reservasi.tanggal || 'N/A'}</p>
             </div>
             <div>
               <label className="text-sm text-gray-600">Waktu</label>
@@ -84,13 +107,7 @@ const DetailReservasiModal: React.FC<DetailReservasiModalProps> = ({
 
           <div>
             <label className="text-sm text-gray-600">Status</label>
-            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-              reservasi.status === 'confirmed'
-                ? 'bg-green-100 text-green-800'
-                : reservasi.status === 'cancelled'
-                ? 'bg-red-100 text-red-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
+            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(reservasi.status)}`}>
               {reservasi.status === 'confirmed' ? 'Dikonfirmasi' :
                reservasi.status === 'cancelled' ? 'Dibatalkan' : 'Menunggu'}
             </span>

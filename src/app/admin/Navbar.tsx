@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Bell, Search, Menu, X } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -11,9 +11,7 @@ interface NavbarProps {
 
 export default function Navbar({ onToggleSidebar, isSidebarOpen = false }: NavbarProps) {
   const pathname = usePathname();
-  const [showModal, setShowModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
   // Judul halaman berdasarkan route admin dengan breadcrumb
   const titles: Record<string, { title: string; breadcrumb: string[] }> = {
@@ -73,8 +71,13 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen = false }: Navba
 
             {/* Page Title & Breadcrumb */}
             <div>
+              {/* Page Title */}
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                {pageInfo.title}
+              </h1>
+              
               {/* Breadcrumb */}
-              <nav className="hidden sm:flex text-sm text-gray-500 mb-1">
+              <nav className="hidden sm:flex text-sm text-gray-500 mt-1">
                 {pageInfo.breadcrumb.map((crumb, index) => (
                   <span key={index} className="flex items-center">
                     {index > 0 && (
@@ -88,26 +91,11 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen = false }: Navba
                   </span>
                 ))}
               </nav>
-              
-              {/* Page Title */}
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-                {pageInfo.title}
-              </h1>
             </div>
           </div>
 
-          {/* Right Section */}
-          <div className="flex items-center space-x-3 md:space-x-4">
-            {/* Search Box - Hidden on mobile */}
-            <div className="relative hidden md:block">
-              
-            </div>
-
-            {/* Mobile Search Button */}
-            <button className="md:hidden p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200">
-              <Search className="w-5 h-5" />
-            </button>
-
+          {/* Right Section - Only Notification Bell */}
+          <div className="flex items-center">
             {/* Notification Bell */}
             <div className="relative">
               <button
@@ -165,28 +153,6 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen = false }: Navba
                 </div>
               )}
             </div>
-
-            {/* User Profile */}
-            <div className="flex items-center space-x-3">
-              {/* User Info - Hidden on mobile */}
-              <div className="hidden lg:block text-right">
-                <p className="text-sm font-medium text-gray-900">Rindi Fadilah</p>
-                <p className="text-xs text-gray-500">Administrator</p>
-              </div>
-
-              {/* Avatar */}
-              <div
-                className="relative w-10 h-10 rounded-full overflow-hidden cursor-pointer ring-2 ring-gray-200 hover:ring-[#481111] transition-all duration-200"
-                onClick={() => setShowModal(true)}
-              >
-                <img
-                  src="/FotoProfil.jpg"
-                  alt="User Avatar"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -198,8 +164,6 @@ export default function Navbar({ onToggleSidebar, isSidebarOpen = false }: Navba
           onClick={() => setShowNotifications(false)}
         ></div>
       )}
-
-      {/* Profile Modal */}
     </>
   );
 }

@@ -1,5 +1,4 @@
-// src/app/Restoran/manajemenMeja/MejaPage.tsx
-// Ubah nama file ini jika Anda menamainya "MejaPage.tsx" bukan "App.tsx"
+
 
 'use client';
 

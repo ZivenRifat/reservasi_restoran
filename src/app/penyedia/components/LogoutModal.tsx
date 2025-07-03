@@ -13,7 +13,7 @@ export default function LogoutModal({ show, onClose, onConfirm }: LogoutModalPro
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-96 p-6 transform transition-all duration-300 scale-100">
         <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
           {/* Icon Peringatan */}

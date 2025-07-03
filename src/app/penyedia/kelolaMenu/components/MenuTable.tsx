@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pencil, Trash2, ImageIcon } from 'lucide-react';
+<<<<<<< HEAD
 import { API_URL } from '@/constant';
 
 interface MenuItem {
@@ -10,13 +11,22 @@ interface MenuItem {
   status: string;
   foto: string | File;
 }
+=======
+// IMPOR DEFINISI MenuItem DARI page.tsx
+import { MenuItem } from '../page'; // <--- PASTIKAN PATH INI SESUAI DENGAN LOKASI page.tsx ANDA
+>>>>>>> origin/main
 
 interface MenuTableProps {
   menuItems: MenuItem[];
   isLoading: boolean;
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
+<<<<<<< HEAD
   BASE_URL: string;
+=======
+  BASE_IMAGE_SERVER_URL: string;
+  disabledActions: boolean; // Menambahkan ini sebagai prop
+>>>>>>> origin/main
 }
 
 export const MenuTable: React.FC<MenuTableProps> = ({
@@ -24,7 +34,12 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   isLoading,
   onEdit,
   onDelete,
+<<<<<<< HEAD
   BASE_URL,
+=======
+  BASE_IMAGE_SERVER_URL,
+  disabledActions, // Menerima prop disabledActions
+>>>>>>> origin/main
 }) => {
   const formatCurrency = (value: string): string => {
     const numValue = parseInt(value, 10);
@@ -36,32 +51,32 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   };
 
   const getImageUrl = (foto: string | File): string => {
-    // Jika foto adalah File object, return placeholder
     if (foto instanceof File) {
       return `${API_URL}menu/placeholder-image.png`;
     }
     
-    // Jika foto kosong atau null
     if (!foto || foto === '') {
       return `${API_URL}menu/placeholder-image.png`;
     }
     
-    // Jika foto sudah berupa URL lengkap
     if (foto.startsWith('http')) {
       return foto;
     }
     
+<<<<<<< HEAD
     // Jika foto hanya nama file, gabungkan dengan base URL
     return `${API_URL}menu/${foto}`;
+=======
+    return `${BASE_IMAGE_SERVER_URL}menu/${foto}`;
+>>>>>>> origin/main
   };
 
   const getStatusDisplay = (status: string): string => {
-    // Normalisasi status untuk display
     const normalizedStatus = status.toLowerCase();
     switch (normalizedStatus) {
       case 'tersedia':
         return 'Tersedia';
-      case 'tidak tersedia':
+      case 'tidak_tersedia':
       case 'habis':
         return 'Tidak Tersedia';
       default:
@@ -74,7 +89,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
     switch (normalizedStatus) {
       case 'tersedia':
         return 'bg-green-100 text-green-800';
-      case 'tidak tersedia':
+      case 'tidak_tersedia':
       case 'habis':
         return 'bg-red-100 text-red-800';
       default:
@@ -88,12 +103,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
   };
 
   const handleEdit = (item: MenuItem): void => {
-    // Pastikan foto berupa string untuk editing
-    const editItem: MenuItem = {
-      ...item,
-      foto: typeof item.foto === 'string' ? item.foto : '',
-    };
-    onEdit(editItem);
+    onEdit(item);
   };
 
   const handleDelete = (item: MenuItem): void => {
@@ -170,6 +180,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                         <div className="text-sm font-medium text-gray-900 truncate">
                           {item.nama || 'Nama menu tidak tersedia'}
                         </div>
+                        {item.jenis && <div className="text-xs text-gray-500 capitalize">{item.jenis}</div>}
                       </div>
                     </div>
                   </td>
@@ -202,6 +213,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                         onClick={() => handleEdit(item)}
                         title="Edit menu"
                         type="button"
+                        disabled={disabledActions}
                       >
                         <Pencil size={16} />
                       </button>
@@ -210,7 +222,7 @@ export const MenuTable: React.FC<MenuTableProps> = ({
                         onClick={() => handleDelete(item)}
                         title="Hapus menu"
                         type="button"
-                        disabled={!item.id}
+                        disabled={!item.id || disabledActions}
                       >
                         <Trash2 size={16} />
                       </button>
