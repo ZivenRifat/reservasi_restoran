@@ -1,17 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-<<<<<<< HEAD
-import { Pencil, Trash2, X, Search, Filter } from 'lucide-react'; // Import icons
-
-// --- Constants ---
-const API_BASE_URL = 'http://127.0.0.1:8000/api/penyedia';
-const AUTH_TOKEN = '5l1oDsKiycT1XIAfZHl95AefT9jRUAyyLLgn7cDP0a7ef34d';
-=======
 import { Pencil, Trash2, X, Search, Filter, AlertCircle, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getCookie, deleteCookie } from 'cookies-next';
->>>>>>> origin/main
 
 // --- Types ---
 interface ReservasiItem {

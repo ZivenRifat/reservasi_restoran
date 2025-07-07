@@ -47,7 +47,7 @@ export default function LoginPage() {
             window.location.href = "/admin/dashboard";
             break;
           case "penyedia":
-            window.location.href = "/Restoran/dashboard";
+            window.location.href = "penyedia/dashboard";
             break;
           case "pemesan":
             window.location.href = "/"; // atau halaman pemesan
