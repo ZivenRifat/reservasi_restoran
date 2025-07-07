@@ -1,83 +1,48 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { API_URL } from '@/constant'; // pastikan import ini benar
+import { useRouter } from 'next/navigation'; // Import useRouter dari Next.js
 
-export default function RegisterPage() {
-  const [nama, setNama] = useState('');
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [noHp, setNoHp] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const router = useRouter(); // Inisialisasi useRouter
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch(`${API_URL}/api/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nama,
-          email,
-          kata_sandi: password,
-          no_hp: noHp,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || 'Registrasi gagal');
-        return;
-      }
-
-      if (data.status === 'success') {
-        // Registrasi berhasil, arahkan ke halaman login
-        router.push('/login');
-      } else {
-        setError(data.message || 'Registrasi gagal');
-      }
-    } catch (err) {
-      console.error('Register error:', err);
-      setError('Terjadi kesalahan, silakan coba lagi.');
-    } finally {
-      setIsLoading(false);
-    }
+    console.log({ email, password, noHp });
+    
+    // Logika registrasi atau login di sini
+    // Misalnya, setelah proses berhasil, arahkan pengguna ke halaman login
+    // Sebagai contoh, setelah registrasi berhasil:
+    router.push('/login'); // Arahkan ke halaman login setelah registrasi
   };
 
   return (
     <div className="min-h-screen flex">
-      {/* Kiri: Form Register */}
+      {/* Kiri: Form Login */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-8 py-12 bg-white">
         <h1 className="text-4xl font-bold mb-6">LOGO</h1>
 
-        <form onSubmit={handleRegister} className="w-full max-w-sm space-y-4">
+        <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
           <div>
             <label className="block mb-1 font-medium">Nama</label>
             <input
-              type="text"
+              type="text" // Ganti menjadi text, karena ini untuk nama
               placeholder="Masukkan Nama"
-              className="w-full p-3 border border-gray-300 rounded-md"
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-
           <div>
             <label className="block mb-1 font-medium">Email</label>
             <input
               type="email"
               placeholder="Masukkan Email"
-              className="w-full p-3 border border-gray-300 rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -89,7 +54,7 @@ export default function RegisterPage() {
             <input
               type="password"
               placeholder="Password"
-              className="w-full p-3 border border-gray-300 rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -101,23 +66,18 @@ export default function RegisterPage() {
             <input
               type="tel"
               placeholder="Masukkan No Hp"
-              className="w-full p-3 border border-gray-300 rounded-md"
+              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
               value={noHp}
               onChange={(e) => setNoHp(e.target.value)}
               required
             />
           </div>
 
-          {error && (
-            <p className="text-red-600 text-sm text-center">{error}</p>
-          )}
-
           <button
             type="submit"
             className="w-full bg-[#3A0E0E] text-white py-3 rounded-md hover:bg-[#4b1c1c]"
-            disabled={isLoading}
           >
-            {isLoading ? 'Mendaftarkan...' : 'Daftar'}
+            Daftar
           </button>
         </form>
       </div>
@@ -126,7 +86,7 @@ export default function RegisterPage() {
       <div className="hidden md:block w-1/2">
         <img
           src="/login-image.png"
-          alt="Register Visual"
+          alt="Login Visual"
           className="w-full h-full object-cover"
         />
       </div>

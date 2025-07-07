@@ -28,18 +28,11 @@ interface Notification {
   type: 'success' | 'error' | '';
 }
 
-<<<<<<< HEAD
-export default function TableList() { // Ubah nama fungsi menjadi TableList
-  // --- Konfigurasi API ---
-  const BASE_URL = 'http://127.0.0.1:8000';
-  const AUTH_TOKEN = '5l1oDsKiycT1XIAfZHl95AefT9jRUAyyLLgn7cDP0a7ef34d'; 
-=======
 export default function TableList() {
   // --- API Configuration ---
   const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000';
   // UBAH: Menambahkan `| null` ke tipe authToken untuk mengakomodasi nilai null
   const [authToken, setAuthToken] = useState<string | null | undefined>(undefined);
->>>>>>> origin/main
 
   // --- State Variables ---
   const [mejaList, setMejaList] = useState<Meja[]>([]);
